@@ -1,0 +1,124 @@
+/*
+ * Sends markers to RViz to visualize the pressure
+ * being applied on a taxel array sensor.
+ *
+ * Copyright (C) 2011  Meka Robotics
+ * Author: Pierre-Luc Bacon <pierrelucbacon@mekabot.com>
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+ */
+
+#ifndef RosPressureVisualizer_H_
+#define RosPressureVisualizer_H_
+
+#include <m3skin_ros/RawTaxelArray.h>
+#include <hrl_haptic_manipulation_in_clutter_msgs/TaxelArray.h>
+//#include <m3skin_ros/TaxelArray.h>
+
+#include <math.h>
+
+#include <ros/ros.h>
+#include <geometry_msgs/Transform.h>
+#include <tf/transform_broadcaster.h>
+#include <tf/transform_datatypes.h>
+#include <visualization_msgs/Marker.h>
+
+
+namespace m3 {
+
+class RosPressureVisualizer {
+public:
+	RosPressureVisualizer();
+	virtual ~RosPressureVisualizer();
+	void Init();
+
+protected:
+	/**
+	 * Publishes a TaxelArray message from the RawTaxelArray message
+	 * @param msg The RawTaxeArray message to transform
+	 */
+	void DisplayPressure(const hrl_haptic_manipulation_in_clutter_msgs::TaxelArray::ConstPtr& msg);
+
+	/**
+	 * Fetches all the taxels tfs from the
+	 * /skin_patch_forearm_right/taxels/srv/local_coord_frames service
+	 * @postcondition The transforms will be stored inside this object.
+	 */
+	void GetTaxelTransforms();
+
+	/**
+	 * Fetches the link name
+	 * @postcondition The link name will be stored inside this object.
+	 */
+	void GetLinkName();
+
+
+	static const double SCALE_ARROW_Y = 0.25;
+	static const double SCALE_ARROW_Z = 0.25;
+	static const double DURATION_ARROW = 0.1;
+	static const double MIN_PRESSURE_VALUE = 0.2;
+	static const double SCALING_FACTOR = 0.05;
+
+	// It is good enough for us if the visualization runs at around 50Hz
+	static const unsigned FREQUENCY_DIVISOR = 2;
+
+	// Setting a larger value would request an older tf in the tf buffer
+	// used by RViz. That way, we avoid errors from RViz, and this one does
+	// not wait on a most recent transform to arrive. In ms.
+	static const double TF_TIME_OFFSET = 0.200;
+
+protected:
+	/**
+	 * Compute the norm
+	 */
+	inline double norm(double x, double y, double z) {
+        return sqrt(x*x+y*y+z*z);
+	}
+
+	visualization_msgs::Marker GetArrowMarker(tf::Vector3 position, tf::Quaternion orientation, double scale);
+    void GetArrowTextMarkers(tf::Vector3 position, tf::Quaternion orientation,
+                             double scale, visualization_msgs::Marker *arrow,
+                             visualization_msgs::Marker *text,
+                             double nx, double ny, double nz);
+
+private:
+
+	/**
+	 * Initialize the centers and normals vectors
+	 */
+	void InitStaticVectors();
+
+	ros::NodeHandle n;
+	ros::Publisher publisher_text_marker;
+	ros::Publisher publisher_text_marker_array;
+	ros::Publisher publisher_marker;
+	ros::Publisher publisher_marker_array;
+	ros::Subscriber subscriber;
+	ros::ServiceClient local_coords_client;
+	ros::ServiceClient link_name_client;
+
+	std::vector<geometry_msgs::Transform> transforms;
+	std::vector<tf::Transform> taxels_transforms;
+	std::vector<tf::Transform> taxels_transforms_inv;
+	std::vector<tf::Quaternion> taxels_arrows_quaternions;
+
+	std::string linkName;
+
+	unsigned frequency_count;
+};
+
+}
+
+#endif /* RosPressureVisualizer_H_ */

@@ -1,0 +1,100 @@
+Background\ ColorR=0
+Background\ ColorG=0
+Background\ ColorB=0
+Fixed\ Frame=/torso_lift_link
+Target\ Frame=/torso_lift_link
+FT\ Skin\ Marker.Enabled=0
+FT\ Skin\ Marker.Marker\ Topic=visualization_marker
+Goal\ Location.Enabled=0
+Goal\ Location.Marker\ Topic=visualization_marker
+Interactive\ Markers.Enabled=0
+Interactive\ Markers.Show\ Axes=0
+Interactive\ Markers.Show\ Descriptions=1
+Interactive\ Markers.Show\ Tool\ Tips=1
+Interactive\ Markers.Update\ Topic=
+Meka\ Senor\ Forces.Enabled=1
+Meka\ Senor\ Forces.Marker\ Array\ Topic=/skin_patch_forearm_right/viz/taxel_array_array
+Meka\ Sensor\ Text.Enabled=1
+Meka\ Sensor\ Text.Marker\ Array\ Topic=/skin_patch_forearm_right/viz/taxel_array_text_array
+Occupancy\ Grid.Enabled=0
+Occupancy\ Grid.Marker\ Topic=visualization_marker
+Right\ Arm\ Markers.Enabled=0
+Right\ Arm\ Markers.Marker\ Topic=visualization_marker
+Robot\ Model.Alpha=1
+Robot\ Model.Collision\ Enabled=0
+Robot\ Model.Enabled=1
+Robot\ Model.Robot\ Description=robot_description
+Robot\ Model.TF\ Prefix=
+Robot\ Model.Update\ Interval=0
+Robot\ Model.Visual\ Enabled=1
+Robot\:\ Robot\ Model\ Link\ bicep_LEFTShow\ Axes=0
+Robot\:\ Robot\ Model\ Link\ bicep_LEFTShow\ Trail=0
+Robot\:\ Robot\ Model\ Link\ bicep_RIGHTShow\ Axes=0
+Robot\:\ Robot\ Model\ Link\ bicep_RIGHTShow\ Trail=0
+Robot\:\ Robot\ Model\ Link\ elbowclevis_LEFTShow\ Axes=0
+Robot\:\ Robot\ Model\ Link\ elbowclevis_LEFTShow\ Trail=0
+Robot\:\ Robot\ Model\ Link\ elbowclevis_RIGHTShow\ Axes=0
+Robot\:\ Robot\ Model\ Link\ elbowclevis_RIGHTShow\ Trail=0
+Robot\:\ Robot\ Model\ Link\ end_effector_LEFTShow\ Axes=0
+Robot\:\ Robot\ Model\ Link\ end_effector_LEFTShow\ Trail=0
+Robot\:\ Robot\ Model\ Link\ end_effector_RIGHTShow\ Axes=0
+Robot\:\ Robot\ Model\ Link\ end_effector_RIGHTShow\ Trail=0
+Robot\:\ Robot\ Model\ Link\ handmount_LEFTShow\ Axes=0
+Robot\:\ Robot\ Model\ Link\ handmount_LEFTShow\ Trail=0
+Robot\:\ Robot\ Model\ Link\ handmount_RIGHTShow\ Axes=0
+Robot\:\ Robot\ Model\ Link\ handmount_RIGHTShow\ Trail=0
+Robot\:\ Robot\ Model\ Link\ shoulderpitch_LEFTShow\ Axes=0
+Robot\:\ Robot\ Model\ Link\ shoulderpitch_LEFTShow\ Trail=0
+Robot\:\ Robot\ Model\ Link\ shoulderpitch_RIGHTShow\ Axes=0
+Robot\:\ Robot\ Model\ Link\ shoulderpitch_RIGHTShow\ Trail=0
+Robot\:\ Robot\ Model\ Link\ shoulderupper_LEFTShow\ Axes=0
+Robot\:\ Robot\ Model\ Link\ shoulderupper_LEFTShow\ Trail=0
+Robot\:\ Robot\ Model\ Link\ shoulderupper_RIGHTShow\ Axes=0
+Robot\:\ Robot\ Model\ Link\ shoulderupper_RIGHTShow\ Trail=0
+Robot\:\ Robot\ Model\ Link\ torso_lift_linkShow\ Axes=0
+Robot\:\ Robot\ Model\ Link\ torso_lift_linkShow\ Trail=0
+Robot\:\ Robot\ Model\ Link\ w_differential_LEFTShow\ Axes=0
+Robot\:\ Robot\ Model\ Link\ w_differential_LEFTShow\ Trail=0
+Robot\:\ Robot\ Model\ Link\ w_differential_RIGHTShow\ Axes=0
+Robot\:\ Robot\ Model\ Link\ w_differential_RIGHTShow\ Trail=0
+Robot\:\ Robot\ Model\ Link\ wrist_LEFTShow\ Axes=0
+Robot\:\ Robot\ Model\ Link\ wrist_LEFTShow\ Trail=0
+Robot\:\ Robot\ Model\ Link\ wrist_RIGHTShow\ Axes=0
+Robot\:\ Robot\ Model\ Link\ wrist_RIGHTShow\ Trail=0
+Tool\ 2D\ Nav\ GoalTopic=goal
+Tool\ 2D\ Pose\ EstimateTopic=initialpose
+Camera\ Type=rviz::OrbitViewController
+Camera\ Config=1.386 5.54821 1.09035 0.3218 -0.365494 -0.36052
+Property\ Grid\ State=selection=Robot Model.Enabled;expanded=.Global Options,Occupancy Grid.Enabled.Occupancy Grid.StatusTopStatus,Occupancy Grid.Enabled.Occupancy Grid.Namespaces,FT Skin Marker.Enabled,FT Skin Marker.Enabled.FT Skin Marker.StatusTopStatus,FT Skin Marker.Enabled.FT Skin Marker.Namespaces,Goal Location.Enabled.Goal Location.StatusTopStatus,Goal Location.Enabled.Goal Location.Namespaces,Right Arm Markers.Enabled.Right Arm Markers.StatusTopStatus,Right Arm Markers.Enabled.Right Arm Markers.Namespaces,Interactive Markers.Enabled.Interactive Markers.StatusTopStatus,Meka Senor Forces.Enabled.Meka Senor Forces.Namespaces,Meka Sensor Text.Enabled.Meka Sensor Text.Namespaces;scrollpos=0,0;splitterpos=164,329;ispageselected=1
+[Display0]
+Name=Robot Model
+Package=rviz
+ClassName=rviz::RobotModelDisplay
+[Display1]
+Name=Occupancy Grid
+Package=rviz
+ClassName=rviz::MarkerDisplay
+[Display2]
+Name=FT Skin Marker
+Package=rviz
+ClassName=rviz::MarkerDisplay
+[Display3]
+Name=Goal Location
+Package=rviz
+ClassName=rviz::MarkerDisplay
+[Display4]
+Name=Right Arm Markers
+Package=rviz
+ClassName=rviz::MarkerDisplay
+[Display5]
+Name=Interactive Markers
+Package=rviz
+ClassName=rviz::InteractiveMarkerDisplay
+[Display6]
+Name=Meka Senor Forces
+Package=rviz
+ClassName=rviz::MarkerArrayDisplay
+[Display7]
+Name=Meka Sensor Text
+Package=rviz
+ClassName=rviz::MarkerArrayDisplay

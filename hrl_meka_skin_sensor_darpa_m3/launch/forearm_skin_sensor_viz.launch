@@ -1,0 +1,20 @@
+
+<!--
+This launch file does not run stand-alone.
+
+To visualize the skin sensor, use:
+roslaunch cody cody.launch use_optitrak:=1 use_forearm_skin_sensor:=1
+
+The launch file is in this ROS package primarily so that we remember
+the node that is responsible for the calibration of the forearm skin
+sensor.
+-->
+
+<launch>
+    <!-- Old Meka Code
+    <node name="skin_publisher" pkg="m3skin_calibration" type="m3skin_calibration" respawn="true"/>
+    -->
+    <node name="skin_patch_calibration" pkg="hrl_meka_skin_sensor_darpa_m3" type="skin_patch_calibration.py" ns='skin_patch_forearm_right'/>
+    <node name="pressure_visualizer" pkg="m3skin_viz" type="m3skin_viz" ns='skin_patch_forearm_right'/>
+</launch>
+

@@ -23,7 +23,7 @@
   <depend package="hrl_lib"/>
   <depend package="equilibrium_point_control"/>
 
-  <depend package="hrl_haptic_controllers_darpa_m3"/>
+  <!--<depend package="hrl_haptic_controllers_darpa_m3"/>-->
 
 </package>
 

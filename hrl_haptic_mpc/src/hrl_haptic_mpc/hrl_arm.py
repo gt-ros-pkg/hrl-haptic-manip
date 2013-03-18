@@ -23,7 +23,7 @@ import numpy as np, math
 import copy
 from threading import RLock
 
-import roslib; roslib.load_manifest('hrl_tactile_controller')
+import roslib; roslib.load_manifest('hrl_haptic_mpc')
 
 try:
     import hrl_lib.geometry as hg

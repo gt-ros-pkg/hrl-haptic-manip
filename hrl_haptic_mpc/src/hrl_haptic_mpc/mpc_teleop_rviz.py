@@ -293,12 +293,14 @@ class MPCTeleopInteractiveMarkers():
   def initMenu(self):
     self.wp_menu_handler = mh.MenuHandler()
     self.wp_menu_handler.insert('Go', callback = self.goalPositionHandler)
-    self.wp_menu_handler.insert('Orient', callback = self.goalPositionOrientationHandler)
+    if self.opt.robot != "sim3": # Sim can't orient in 6DOF as it's a 3DOF planar arm.
+      self.wp_menu_handler.insert('Orient', callback = self.goalPositionOrientationHandler)
     self.wp_menu_handler.insert('Stop', callback = self.stopArmHandler)
-    if self.opt.robot == "pr2":
+    if self.opt.robot == "pr2": # Gripper commands are specific to the PR2
       self.wp_menu_handler.insert('Open Gripper', callback = self.openGripperHandler)
       self.wp_menu_handler.insert('Close Gripper', callback = self.closeGripperHandler)
-    self.wp_menu_handler.insert('Zero Skin', callback = self.zeroSkinHandler)
+    if self.opt.robot != "sim3": # Sim doesn't need zeroing ever, doesn't need to be present.
+      self.wp_menu_handler.insert('Zero Skin', callback = self.zeroSkinHandler)
     
     imu.add_menu_handler(self.wp_im, self.wp_menu_handler, self.server) 
   

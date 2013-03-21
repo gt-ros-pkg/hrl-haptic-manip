@@ -295,7 +295,7 @@ class MPCTeleopInteractiveMarkers():
     self.wp_menu_handler.insert('Go', callback = self.goalPositionHandler)
     if self.opt.robot != "sim3": # Sim can't orient in 6DOF as it's a 3DOF planar arm.
       self.wp_menu_handler.insert('Orient', callback = self.goalPositionOrientationHandler)
-    self.wp_menu_handler.insert('Stop', callback = self.stopArmHandler)
+      self.wp_menu_handler.insert('Stop', callback = self.stopArmHandler)
     if self.opt.robot == "pr2": # Gripper commands are specific to the PR2
       self.wp_menu_handler.insert('Open Gripper', callback = self.openGripperHandler)
       self.wp_menu_handler.insert('Close Gripper', callback = self.closeGripperHandler)

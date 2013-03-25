@@ -5,7 +5,7 @@
 
   </description>
   <author>Advait Jain, Advisor: Prof. Charles C. Kemp. Healthcare Robotics Lab, Georgia Tech</author>
-  <license>BSD</license>
+  <license>Dual Licence: Apache 2.0, New BSD</license>
   <review status="unreviewed" notes=""/>
   <url>http://ros.org/wiki/hrl_fabric_based_tactile_sensor</url>
   <depend package="hrl_meka_skin_sensor_darpa_m3"/>

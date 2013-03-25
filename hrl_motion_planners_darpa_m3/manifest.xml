@@ -6,7 +6,7 @@
   </description>
   <author>Advait Jain, Marc Killpack. Advisor: Prof. Charlie Kemp.
       Healthcare Robotics Lab, Georgia Tech.</author>
-  <license>BSD</license>
+  <license>Dual Licence: Apache 2.0, New BSD</license>
   <review status="unreviewed" notes=""/>
   <url>http://ros.org/wiki/hrl_motion_planners_darpa_m3</url>
   <depend package="rospy"/>

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-#   Copyright 2013 Georgia Tech Research Corporation
+#   Copyright 2013 Georgia Institute of Technology
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
@@ -39,6 +39,7 @@ import geometry_msgs.msg
 import trajectory_msgs.msg
 import std_msgs.msg
 import hrl_haptic_manipulation_in_clutter_msgs.msg as haptic_msgs
+import hrl_msgs.msg
 
 import haptic_mpc_util
 
@@ -82,6 +83,11 @@ class WaypointGenerator():
   max_ang_step = 0.02 # 0.02 rad. Slightly over 1 degree
   at_waypoint_threshold = 0.02 # tolerance for being at the goal and moving to the next waypoint.
   at_waypoint_ang_threshold = numpy.radians(5.0)
+  
+  max_posture_step = numpy.radians(5.0)
+  at_posture_threshold = numpy.radians(2.0)
+  
+  mode = "none" # Set to "posture", "pose", or potentially "both"
 
   current_trajectory_deque = collections.deque()
   gripper_pose = None
@@ -166,13 +172,15 @@ class WaypointGenerator():
   def initComms(self):        
     # Publish to a waypoint pose topic
     self.pose_waypoint_pub = rospy.Publisher(self.waypoint_pose_topic, geometry_msgs.msg.PoseStamped) # Pose waypoint publishing      
+    self.goal_posture_pub = rospy.Publisher("/haptic_mpc/goal_posture", hrl_msgs.msg.FloatArray)
+    self.mpc_weights_pub = rospy.Publisher("/haptic_mpc/weights", haptic_msgs.HapticMpcWeights)
     
     # Subscribe to the a goal pose topic. 
     rospy.Subscriber(self.goal_pose_topic, geometry_msgs.msg.PoseStamped, self.goalPoseCallback)
     # Subscribe to the current robot state 
     rospy.Subscriber(self.current_pose_topic, haptic_msgs.RobotHapticState, self.robotStateCallback)
     # OpenRave planner for the PR2
-    rospy.Subscriber('/haptic_mpc/openrave/joint_trajectory_plan', trajectory_msgs.msg.JointTrajectory, self.jointTrajectoryCallback)
+    rospy.Subscriber('/haptic_mpc/joint_trajectory', trajectory_msgs.msg.JointTrajectory, self.jointTrajectoryCallback)
     # Subscribe to the goal pose array topic.
     rospy.Subscriber(self.goal_pose_array_topic, geometry_msgs.msg.PoseArray, self.poseTrajectoryCallback)
     self.pose_traj_viz_pub = rospy.Publisher('/haptic_mpc/current_pose_traj', geometry_msgs.msg.PoseArray, latch=True) 
@@ -256,22 +264,31 @@ class WaypointGenerator():
       for point in msg.points:
         # Calculate pose for this point using FK
         # Append pose to deque
-        joint_angles = point.positions
-        end_effector_position, end_effector_orient_cart = self.robot_kinematics.FK(joint_angles, len(joint_angles))
-        end_effector_orient_quat = tr.matrix_to_quaternion(end_effector_orient_cart)
+#        joint_angles = point.positions
+#        end_effector_position, end_effector_orient_cart = self.robot_kinematics.FK(joint_angles, len(joint_angles))
+#        end_effector_orient_quat = tr.matrix_to_quaternion(end_effector_orient_cart)
+#        
+#        pose = geometry_msgs.msg.Pose()
+#        ee_pos = end_effector_position.A1
+#        pose.position.x = ee_pos[0]
+#        pose.position.y = ee_pos[1]
+#        pose.position.z = ee_pos[2]
+#        pose.orientation.x = end_effector_orient_quat[0]
+#        pose.orientation.y = end_effector_orient_quat[1]
+#        pose.orientation.z = end_effector_orient_quat[2]
+#        pose.orientation.w = end_effector_orient_quat[3]
         
-        pose = geometry_msgs.msg.Pose()
-        ee_pos = end_effector_position.A1
-        pose.position.x = ee_pos[0]
-        pose.position.y = ee_pos[1]
-        pose.position.z = ee_pos[2]
-        pose.orientation.x = end_effector_orient_quat[0]
-        pose.orientation.y = end_effector_orient_quat[1]
-        pose.orientation.z = end_effector_orient_quat[2]
-        pose.orientation.w = end_effector_orient_quat[3]
+        self.current_trajectory_deque.append(point) # Check type of current value when pulling from the deque
         
-        self.current_trajectory_deque.append(pose)
-        
+  ## Update the weights used by the MPC.  
+  def setControllerWeights(self, position_weight, orient_weight, posture_weight):
+    weights_msg = haptic_msgs.HapticMpcWeights()
+    weights_msg.header.stamp = rospy.Time.now()
+    weights_msg.position_weight = position_weight
+    weights_msg.orient_weight = orient_weight
+    weights_msg.posture_weight = posture_weight
+    self.mpc_weights_pub.publish(weights_msg) # Enable position tracking only - disable orientation by setting the weight to 0  
+ 
    
   ## Returns the next waypoint along a straight line trajectory from the current gripper pose to the goal pose.
   # The step size towards the goal is configurable through the parameters passed in.
@@ -349,6 +366,17 @@ class WaypointGenerator():
     #header.frame_id = "/torso_lift_link"
     header.frame_id = "/base_link"
     return header
+  
+  ## Max absolute distance between joints postures.  
+  def distanceBetweenPostures(self, postureA, postureB):
+    max_dist = 0.0
+    
+    for i in range(1, len(postureA)):
+      dist = abs(postureA[i] - postureB[i])
+      if dist > max_dist:
+        max_dist = dist
+        
+    return max_dist
     
   ## Euclidian distance between two poses. Ignores differences in orientation.
   # @param poseA geometry_msgs.msg.Pose
@@ -399,6 +427,33 @@ class WaypointGenerator():
       else: # We haven't got a valid trajectory. Return None. 
         return None  
   
+  ## Pull postures from the trajectory deque    
+  def getPostureFromTrajectory(self):
+    with self.state_lock:
+      curr_posture = copy.copy(self.joint_angles)
+    with self.traj_lock:
+      # If we have a current trajectory, represented as a sequence of Pose OR JointTrajectoryPoint objects in a deque  
+      if len(self.current_trajectory_deque) > 0:
+        # Check if we need to trim the list
+        if len(self.current_trajectory_deque) > 1:
+          # Return the next point closest along the trajectory if we're close enough to it (eg within 5mm of it)
+          if self.distanceBetweenPostures(curr_posture, self.current_trajectory_deque[0].positions) < self.at_posture_threshold:# \    
+            # Trim the trajectory so that the current waypoint is a reasonable distance away - too fine steps make the controller unhappy.
+            # Discard trajectory points that are within the min distance unless this the last point in the trajectory.
+            # Adjust this by increasing or decreasing max_pos_step
+#            while self.distanceBetweenPostures(curr_posture, self.current_trajectory_deque[0].positions) < self.at_posture_threshold and len(self.current_trajectory_deque) > 1:
+#              print "Trimming trajectory - dist: %s, len(deque): %s" %  (self.distanceBetweenPostures(curr_posture, self.current_trajectory_deque[0].positions), len(self.current_trajectory_deque))
+            self.current_trajectory_deque.popleft()
+            print "moving to next waypoint."
+            print numpy.degrees(self.current_trajectory_deque[0].positions)
+        
+        desired_posture = self.current_trajectory_deque[0]#self.straightLineTrajectory(curr_gripper_pose, self.current_trajectory_deque[0], self.max_pos_step, self.max_ang_step)
+        return desired_posture
+     
+      else: # We haven't got a valid trajectory. Return None. 
+        return None 
+        
+  
   ## Publishes the next waypoint for the control to try to achieve.
   #
   # If we have a valid trajectory, get the next waypoint from that. 
@@ -414,21 +469,46 @@ class WaypointGenerator():
    
     if tmp_curr_pose == None: # If we haven't heard robot state yet, don't act.
       return
- 
-    desired_pose = self.getWaypointFromTrajectory() # If we have a trajectory, return a valid pose (else None)
-    if desired_pose == None and tmp_goal_pose != None: # If we have a teleop goal but don't have a trajectory, go in a straight line to the goal
-      desired_pose = self.straightLineTrajectory(tmp_curr_pose, tmp_goal_pose, self.max_pos_step, self.max_ang_step)
-    
-    if desired_pose == None:
-      return # Don't publish invalid waypoints.
-      desired_pose = tmp_curr_pose 
- 
-    # Publish a waypoint every cycle.
-    waypoint_msg = geometry_msgs.msg.PoseStamped()
-    waypoint_msg.header = self.getMessageHeader()
-    waypoint_msg.pose = desired_pose
 
-    self.pose_waypoint_pub.publish(waypoint_msg)   
+    # Logic flow changed so that the deque can store either geometry_msgs.msg.Pose or trajectory_msgs.msg.JointTrajectoryPoint 
+    if len(self.current_trajectory_deque) > 0:
+      # If the deque has poses
+      if type(self.current_trajectory_deque[0]) == geometry_msgs.msg.Pose:
+        if self.mode != "pose":
+          self.setControllerWeights(5.0, 4.0, 0.0)
+        self.mode = "pose"
+        desired_pose = self.getWaypointFromTrajectory() # If we have a trajectory, return a valid pose (else None)
+        if desired_pose == None and tmp_goal_pose != None: # If we have a teleop goal but don't have a trajectory, go in a straight line to the goal
+          desired_pose = self.straightLineTrajectory(tmp_curr_pose, tmp_goal_pose, self.max_pos_step, self.max_ang_step)
+        
+        if desired_pose == None:
+          return # Don't publish invalid waypoints. If we still didn't get a good pose from the straight line interpolation, something is wrong. 
+     
+        # Publish a waypoint every cycle.
+        waypoint_msg = geometry_msgs.msg.PoseStamped()
+        waypoint_msg.header = self.getMessageHeader()
+        waypoint_msg.pose = desired_pose
+    
+        self.pose_waypoint_pub.publish(waypoint_msg)
+      # If the deque has joint postures rather than poses.
+      elif type(self.current_trajectory_deque[0]) == trajectory_msgs.msg.JointTrajectoryPoint:
+        if self.mode != "posture":
+          self.setControllerWeights(0.0, 0.0, 1.0)
+        self.mode = "posture"
+        desired_posture = self.getPostureFromTrajectory() # If we have a trajectory, return a valid posture
+        if desired_posture == None:
+          rospy.loginfo("desired_posture is none")
+          return
+        
+        waypoint_msg = hrl_msgs.msg.FloatArray()
+        #print desired_posture.positions
+        waypoint_msg.data = list(desired_posture.positions)
+        
+        self.goal_posture_pub.publish(waypoint_msg)
+      else:
+        rospy.loginfo("Object in the waypoint deque is neither geometry_msgs.msg.Pose or trajectory_msgs.msg.JointTrajectoryPoint. Who broke it?!")
+          
+           
 
   ## Start the waypoint generator publishing waypoints.  
   def start(self):

@@ -17,7 +17,7 @@ haptic_mpc:
 
     posture_weight: 0.0
     posture_step_size: 0.1 # Step size in degrees
-    posture_step_scale: 10.0 # scale term. If we're within 10 steps of the goal, reduce the step allowed proportionally. 
+    posture_step_scale: 30.0 # scale term. If we're within 10 steps of the goal, reduce the step allowed proportionally. 
 
     force_reduction_weight: 0.0005
     jerk_opt_weight: 0.00001

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-#   Copyright 2013 Georgia Tech Research Corporation
+#   Copyright 2013 Georgia Institute of Technology
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
@@ -441,7 +441,7 @@ class HapticMPC():
   # @param msg HapticMpcWeights message object
   def updateWeightsCallback(self, msg):   
     with self.gain_lock:
-      rospy.loginfo("Updating MPC weights. Pos: %s, Orient: %s" % (str(msg.position_weight), str(msg.orient_weight)))
+      rospy.loginfo("Updating MPC weights. Pos: %s, Orient: %s, Posture: %s" % (str(msg.position_weight), str(msg.orient_weight), str(msg.posture_weight)))
       self.pos_weight = msg.position_weight
       self.orient_weight = msg.orient_weight
       self.posture_weight = msg.posture_weight

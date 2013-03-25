@@ -54,7 +54,8 @@ class MPCTeleopInteractiveMarkers():
     base_path = '/haptic_mpc'
     control_path = '/control_params'
     self.orient_weight = rospy.get_param(base_path + control_path + '/orientation_weight')
-    self.pos_weight = rospy.get_param(base_path + control_path + '/position_weight')  
+    self.pos_weight = rospy.get_param(base_path + control_path + '/position_weight')
+    self.posture_weight = 1.0#rospy.get_param(base_path + control_path + '/posture_weight')    
     self.arm = opt.arm
   ## Callback for the interactive marker location. 
   #
@@ -94,6 +95,7 @@ class MPCTeleopInteractiveMarkers():
     weights_msg.header.stamp = rospy.Time.now()
     weights_msg.position_weight = self.pos_weight
     weights_msg.orient_weight = 0.0
+    weights_msg.posture_weight = 0.0
     self.mpc_weights_pub.publish(weights_msg) # Enable position tracking only - disable orientation by setting the weight to 0 
     self.goal_pos_pub.publish(self.current_goal_pose)
 #    self.ros_pub.publish('go_to_way_point')
@@ -111,6 +113,18 @@ class MPCTeleopInteractiveMarkers():
  #   self.ros_pub.publish('orient_to_way_point')
     self.add_topic_pub = rospy.Publisher('/haptic_mpc/add_taxel_array', std_msgs.msg.String)
     self.remove_topic_pub = rospy.Publisher('/haptic_mpc/remove_taxel_array', std_msgs.msg.String)
+  
+  ## Publishes the current pose of the interactive marker as the goal pose for a planner.
+  # The planner should then 
+  def planGoalHandler(self, feedback):  
+    rospy.loginfo("MPC Teleop: Publishing new goal to the planner. Swapping to postural control")
+    weights_msg = haptic_msgs.HapticMpcWeights()
+    weights_msg.header.stamp = rospy.Time.now()
+    weights_msg.position_weight = 0.0
+    weights_msg.orient_weight = 0.0
+    weights_msg.posture_weight = self.posture_weight
+    self.mpc_weights_pub.publish(weights_msg) # Enable posture tracking 
+    self.planner_goal_pub.publish(self.current_goal_pose)  
   
   ## Publishes an empty trajectory message. 
   # This has the effect of flushing the stored trajectory and goal pose from the waypoint generator, stopping the controller motion.
@@ -183,6 +197,7 @@ class MPCTeleopInteractiveMarkers():
     self.goal_pos_pub = rospy.Publisher("/haptic_mpc/goal_pose", PoseStamped, latch=True)
     self.mpc_weights_pub = rospy.Publisher("/haptic_mpc/weights", haptic_msgs.HapticMpcWeights)
     self.goal_traj_pub = rospy.Publisher("/haptic_mpc/goal_pose_array", PoseArray)
+    self.planner_goal_pub = rospy.Publisher("/haptic_mpc/planner_goal_pose", PoseStamped, latch=True)
 
     self.add_topic_pub = rospy.Publisher("/haptic_mpc/add_taxel_array", std_msgs.msg.String)
     self.remove_topic_pub = rospy.Publisher("/haptic_mpc/remove_taxel_array", std_msgs.msg.String)
@@ -295,6 +310,9 @@ class MPCTeleopInteractiveMarkers():
     self.wp_menu_handler.insert('Go', callback = self.goalPositionHandler)
     if self.opt.robot != "sim3": # Sim can't orient in 6DOF as it's a 3DOF planar arm.
       self.wp_menu_handler.insert('Orient', callback = self.goalPositionOrientationHandler)
+      
+    self.wp_menu_handler.insert('Plan to goal', callback = self.planGoalHandler)
+    if self.opt.robot != "sim3":  # Stop doesn't work for sim - don't use it.
       self.wp_menu_handler.insert('Stop', callback = self.stopArmHandler)
     if self.opt.robot == "pr2": # Gripper commands are specific to the PR2
       self.wp_menu_handler.insert('Open Gripper', callback = self.openGripperHandler)

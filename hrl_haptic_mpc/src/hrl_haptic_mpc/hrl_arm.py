@@ -1,4 +1,4 @@
-#   Copyright 2013 Georgia Tech Research Corporation
+#   Copyright 2013 Georgia Institute of Technology
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
@@ -18,6 +18,9 @@
 # Any robot that wants to use equilibrium point control should implement the functions
 # sketched out in the HRLArm and HRLArmKinematics
 #
+
+## @package hrl_haptic_mpc
+# @author Advait Jain
 
 import numpy as np, math
 import copy

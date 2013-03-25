@@ -1,0 +1,9 @@
+<stack>
+    <description brief="Model Predictive Control for whole-arm tactile sensing">
+        The hrl_haptic_manipulation stack collects the code developed by the Healthcare Robotics Lab at Georgia Tech for performing Model Predictive Control with whole-arm tactile sensing.  The controller attempts to move the end-effector toward a given goal subject to constraints on the force of contact, as reported by the tactile sensor.  Currently supports simulation and real robots, as well as multiple tactile sensors.
+    </description>
+  <author>Advait Jain, Marc Killpack, Jeffrey Hawke, Phillip Grice. Advisor: Charlie Kemp. Lab: Healthcare Robotics Lab at Georgia Tech.</author>
+  <license>BSD</license>  
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/hrl_haptic_manipulation</url>
+</stack>

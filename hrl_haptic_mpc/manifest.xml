@@ -3,9 +3,9 @@
 
         Georgia Tech Healthcare Robotics Lab (HRL). Haptic Model Predictive Controller.
     </description>
-    <author>Jeff Hawke, Marc Killpack, Philip Grice, Advait Jain, Prof. Charlie Kemp (advisor and co-author). 
+    <author>Jeff Hawke, Phillip Grice, Marc Killpack, Advait Jain. Advisor and Co-author: Prof. Charlie Kemp. 
         Healthcare Robotics Lab, Georgia Tech</author>
-    <license>Apache 2.0</license>
+    <license>Apache 2.0, BSD</license>
     <review status="unreviewed" notes=""/>
     <url>http://ros.org/wiki/hrl_haptic_mpc</url>
     <!-- System Dependencies-->

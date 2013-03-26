@@ -1,7 +1,18 @@
 <package>
     <description brief="hrl_haptic_mpc">
+        Model Predictive Controller that uses feedback from whole-arm
+        tactile sensing to reach to a goal location while controlling
+        contact forces across the entire arm.
+        
+        The code in this package is a heavy refactoring and
+        improvement of the code originally written while developing
+        the controller as detailed in this publication: "Reaching in
+        Clutter with Whole-Arm Tactile Sensing", International Journal
+        of Robotics Research, 2013.
 
-        Georgia Tech Healthcare Robotics Lab (HRL). Haptic Model Predictive Controller.
+        The authors of the first revision of the code were Advait
+        Jain, Marc D. Killpack, and Prof. Charlie Kemp (advisor and
+        co-author).
     </description>
     <author>Jeff Hawke, Phillip Grice, Marc Killpack, Advait Jain. Advisor and Co-author: Prof. Charlie Kemp. 
         Healthcare Robotics Lab, Georgia Tech</author>

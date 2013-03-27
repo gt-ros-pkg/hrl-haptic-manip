@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-#   Copyright 2013 Georgia Institute of Technology
+#   Copyright 2013 Georgia Tech Research Corporation
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
@@ -444,7 +444,7 @@ class WaypointGenerator():
 #            while self.distanceBetweenPostures(curr_posture, self.current_trajectory_deque[0].positions) < self.at_posture_threshold and len(self.current_trajectory_deque) > 1:
 #              print "Trimming trajectory - dist: %s, len(deque): %s" %  (self.distanceBetweenPostures(curr_posture, self.current_trajectory_deque[0].positions), len(self.current_trajectory_deque))
             self.current_trajectory_deque.popleft()
-            print "moving to next waypoint."
+            print "Moving to next waypoint."
             print numpy.degrees(self.current_trajectory_deque[0].positions)
         
         desired_posture = self.current_trajectory_deque[0]#self.straightLineTrajectory(curr_gripper_pose, self.current_trajectory_deque[0], self.max_pos_step, self.max_ang_step)
@@ -504,7 +504,7 @@ class WaypointGenerator():
         #print desired_posture.positions
         waypoint_msg.data = list(desired_posture.positions)
         
-        self.goal_posture_pub.publish(waypoint_msg)
+        #self.goal_posture_pub.publish(waypoint_msg)
       else:
         rospy.loginfo("Object in the waypoint deque is neither geometry_msgs.msg.Pose or trajectory_msgs.msg.JointTrajectoryPoint. Who broke it?!")
           

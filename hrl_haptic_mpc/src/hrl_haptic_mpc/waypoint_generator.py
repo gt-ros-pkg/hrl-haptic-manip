@@ -204,6 +204,7 @@ class WaypointGenerator():
 
     with self.goal_lock:
       self.goal_pose = msg.pose
+
     with self.traj_lock:
       self.current_trajectory_deque.clear()
   
@@ -252,6 +253,9 @@ class WaypointGenerator():
       #Append the list of poses to the recently cleared deque
       self.current_trajectory_deque.extend(pose_array)
       
+      with self.goal_lock: # Invalidate previous goal poses.
+        self.goal_pose = None
+      
 
   ## Store a joint angle trajectory in the deque. Performs forward kinematics to convert it to end effector poses in the torso frame.
   # @param msg A trajectory_msgs.msg.JointTrajectory object.
@@ -279,6 +283,10 @@ class WaypointGenerator():
 #        pose.orientation.w = end_effector_orient_quat[3]
         
         self.current_trajectory_deque.append(point) # Check type of current value when pulling from the deque
+    
+    # Clear goal pose so the waypoints come from the trajectory
+    with self.goal_lock:
+      self.goal_pose = None
         
   ## Update the weights used by the MPC.  
   def setControllerWeights(self, position_weight, orient_weight, posture_weight):
@@ -470,8 +478,14 @@ class WaypointGenerator():
     if tmp_curr_pose == None: # If we haven't heard robot state yet, don't act.
       return
 
-    # Logic flow changed so that the deque can store either geometry_msgs.msg.Pose or trajectory_msgs.msg.JointTrajectoryPoint 
-    if len(self.current_trajectory_deque) > 0:
+    # Logic flow changed so that the deque can store either geometry_msgs.msg.Pose or trajectory_msgs.msg.JointTrajectoryPoint     
+    if tmp_goal_pose != None:
+      desired_pose = self.straightLineTrajectory(tmp_curr_pose, tmp_goal_pose, self.max_pos_step, self.max_ang_step)
+      waypoint_msg = geometry_msgs.msg.PoseStamped()
+      waypoint_msg.header = self.getMessageHeader()
+      waypoint_msg.pose = desired_pose
+      self.pose_waypoint_pub.publish(waypoint_msg)
+    elif len(self.current_trajectory_deque) > 0: # We have some valid trajectory.
       # If the deque has poses
       if type(self.current_trajectory_deque[0]) == geometry_msgs.msg.Pose:
         if self.mode != "pose":
@@ -481,14 +495,14 @@ class WaypointGenerator():
         if desired_pose == None and tmp_goal_pose != None: # If we have a teleop goal but don't have a trajectory, go in a straight line to the goal
           desired_pose = self.straightLineTrajectory(tmp_curr_pose, tmp_goal_pose, self.max_pos_step, self.max_ang_step)
         
+        # Don't publish invalid waypoints. If we still didn't get a good pose from the straight line interpolation, something is wrong.
         if desired_pose == None:
-          return # Don't publish invalid waypoints. If we still didn't get a good pose from the straight line interpolation, something is wrong. 
+          return  
      
         # Publish a waypoint every cycle.
         waypoint_msg = geometry_msgs.msg.PoseStamped()
         waypoint_msg.header = self.getMessageHeader()
         waypoint_msg.pose = desired_pose
-    
         self.pose_waypoint_pub.publish(waypoint_msg)
       # If the deque has joint postures rather than poses.
       elif type(self.current_trajectory_deque[0]) == trajectory_msgs.msg.JointTrajectoryPoint:

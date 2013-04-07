@@ -67,7 +67,6 @@ class Simulator{
 	static const dReal timestep=0.0005;
 	double cur_time;
 
-
     protected:
         dHingeJoint manip_rev_jts[MAX_NUM_REV];
         dHingeJoint base_rev_jts[MAX_NUM_REV];
@@ -727,9 +726,9 @@ void Simulator::update_friction_and_obstacles()
 {
     hrl_msgs::FloatArrayBare obst_pos_ar;
     hrl_msgs::FloatArrayBare obst_rot_ar;
-
     const dReal *position;
     const dReal *rotation;
+
     std::vector<double> pos_vec(3);
     std::vector<double> rot_vec(12);
 
@@ -1459,23 +1458,47 @@ void Simulator::create_fixed_obstacles()
     nh_.getParam("/m3/software_testbed/fixed_position", fixed_pos);
     XmlRpc::XmlRpcValue fixed_dim;
     nh_.getParam("/m3/software_testbed/fixed_dimen", fixed_dim);
+    XmlRpc::XmlRpcValue fixed_ctype;
+    nh_.getParam("/m3/software_testbed/fixed_ctype", fixed_ctype);
+
 
     for (int i = 0; i < num_used_fixed; i++)
     {
         dMass m_obst;
-        dCapsule *geom_fixed;
+
         dMassSetCapsuleTotal(&m_obst, obstacle_mass, 3,
                 (double)fixed_dim[i][0], (double)fixed_dim[i][2]);
 
         fixed_obstacles[i].create(world);
         fixed_obstacles[i].setPosition((double)fixed_pos[i][0], (double)fixed_pos[i][1], (double)fixed_pos[i][2]);
         fixed_obstacles[i].setMass(&m_obst);
-        fixed_joint_ids[i] = dJointCreateFixed(world.id(), 0);
-        dJointAttach(fixed_joint_ids[i], fixed_obstacles[i].id(), 0);
-        dJointSetFixed(fixed_joint_ids[i]);
-        geom_fixed = new dCapsule(space, (double)fixed_dim[i][0], (double)fixed_dim[i][2]);
-        geom_fixed->setBody(fixed_obstacles[i]);
+
+        if (static_cast<std::string>(fixed_ctype[i]) == "wall")
+        {
+            dBox *geom_fixed;
+            double theta = (double)fixed_pos[i][3];
+            dMatrix3 obstacle_rotate = {cos(theta),-sin(theta),0,0,sin(theta),cos(theta),0,0,0,0,1.0,0};
+            fixed_obstacles[i].setRotation(obstacle_rotate);
+
+            fixed_joint_ids[i] = dJointCreateFixed(world.id(), 0);
+            dJointAttach(fixed_joint_ids[i], fixed_obstacles[i].id(), 0);        
+            dJointSetFixed(fixed_joint_ids[i]);
+
+            geom_fixed = new dBox(space, (double)fixed_dim[i][0], (double)fixed_dim[i][1], (double)fixed_dim[i][2]);
+            geom_fixed->setBody(fixed_obstacles[i]);
+        }
+        else
+        {
+            dCapsule *geom_fixed;
+
+            fixed_joint_ids[i] = dJointCreateFixed(world.id(), 0);
+            dJointAttach(fixed_joint_ids[i], fixed_obstacles[i].id(), 0);        
+            dJointSetFixed(fixed_joint_ids[i]);
+
+            geom_fixed = new dCapsule(space, (double)fixed_dim[i][0], (double)fixed_dim[i][2]);
+            geom_fixed->setBody(fixed_obstacles[i]);
+        }
+
         //	fixed_obstacles.push_back(fixed_obstacle);
     }
 }
-

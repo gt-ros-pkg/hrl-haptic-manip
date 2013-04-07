@@ -89,7 +89,7 @@ int main(int argc, char **argv)
             q_pub_step = 0;
 
             tf_transform.setOrigin(tf::Vector3(0, 0, 0.0));
-            tf_transform.setRotation(tf::Quaternion(0, 0, 0));
+            tf_transform.setRotation(tf::Quaternion(0, 0, 0, 1.0));
 
             br.sendTransform(tf::StampedTransform(tf_transform,
                         ros::Time::now(), "/world",

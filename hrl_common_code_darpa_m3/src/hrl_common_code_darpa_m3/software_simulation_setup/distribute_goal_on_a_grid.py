@@ -42,6 +42,17 @@ if __name__ == '__main__':
     p.add_option('--sim3_with_hand', action='store_true', dest='sim3_with_hand',
                  help='three link planar (upper arm, forearm, hand)')
 
+    p.add_option('--grid_goal', action='store', dest='grid_resol', type='float',
+                 default=0.0, help='Grid Goal resolution for equaly distributed goals')
+    p.add_option('--xmin', action='store', dest='xmin',type='float',
+                 default=0.2, help='min x coord for goals')
+    p.add_option('--xmax', action='store', dest='xmax',type='float',
+                 default=0.6, help='max x coord for goals')
+    p.add_option('--ymin', action='store', dest='ymin',type='float',
+                 default=-0.3, help='min y coord for goals')
+    p.add_option('--ymax', action='store', dest='ymax',type='float',
+                 default=0.3, help='max y coord for goals')
+
     opt, args = p.parse_args()
 
     if opt.pkl == None:
@@ -49,27 +60,58 @@ if __name__ == '__main__':
 
     rpd = ut.load_pickle(opt.pkl)
     nm = '.'.join(opt.pkl.split('.')[0:-1])
-
-    r_step = (opt.rmax - opt.rmin) / (opt.nr - 1)
-    t_step = math.radians((opt.tmax - opt.tmin) / (opt.nt - 1))
-    t_start = math.radians(opt.tmin)
-    nt = opt.nt
     g_list = []
 
-    for r in range(opt.nr):
-        for t in range(nt):
-            rad = opt.rmin + r_step * r
-            theta = t_start + t_step * t
-            rpd['goal'] = [rad * math.cos(theta), rad * math.sin(theta), 0]
-            ut.save_pickle(rpd, nm + '_r%02d'%r + '_t%02d'%t + '.pkl')
-            g_list.append(copy.copy(rpd['goal']))
+    if opt.grid_resol:
 
-        if r%2 == 0:
-            t_start = t_start + t_step/2
-            nt = nt - 1
+        x = opt.xmin
+        y = opt.ymin
+
+        arGridX = []
+        while x <= opt.xmax:
+            arGridX.append(x)
+            x += opt.grid_resol
+
+        arGridY = []
+        while y <= opt.ymax:
+            arGridY.append(y)
+            y += opt.grid_resol
+
+        for i in range(len(arGridX)):
+            for j in range(len(arGridY)):
+                rpd['goal'] = [arGridX[i], arGridY[j], 0]
+                ut.save_pickle(rpd, nm + '_x%02d'%i + '_y%02d'%j + '.pkl')
+                g_list.append(copy.copy(rpd['goal']))
+
+    else:
+        # Prevent divided by zero
+        if opt.nr != 1 :
+            r_step = (opt.rmax - opt.rmin) / (opt.nr - 1)
         else:
-            t_start = t_start - t_step/2
-            nt = nt + 1
+            r_step = 0
+
+        if opt.nt != 1 :
+            t_step = math.radians((opt.tmax - opt.tmin) / (opt.nt - 1))
+        else:
+            t_step = 0
+
+        t_start = math.radians(opt.tmin)
+        nt = opt.nt
+
+        for r in range(opt.nr):
+            for t in range(nt):
+                rad = opt.rmin + r_step * r
+                theta = t_start + t_step * t
+                rpd['goal'] = [rad * math.cos(theta), rad * math.sin(theta), 0]
+                ut.save_pickle(rpd, nm + '_r%02d'%r + '_t%02d'%t + '.pkl')
+                g_list.append(copy.copy(rpd['goal']))
+
+            if r%2 == 0:
+                t_start = t_start + t_step/2
+                nt = nt - 1
+            else:
+                t_start = t_start - t_step/2
+                nt = nt + 1
 
     if opt.sf:
         # if we are using this file, then we need to have

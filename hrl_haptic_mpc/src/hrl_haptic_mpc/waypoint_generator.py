@@ -518,7 +518,7 @@ class WaypointGenerator():
         #print desired_posture.positions
         waypoint_msg.data = list(desired_posture.positions)
         
-        #self.goal_posture_pub.publish(waypoint_msg)
+        self.goal_posture_pub.publish(waypoint_msg)
       else:
         rospy.loginfo("Object in the waypoint deque is neither geometry_msgs.msg.Pose or trajectory_msgs.msg.JointTrajectoryPoint. Who broke it?!")
           

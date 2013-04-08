@@ -11,6 +11,7 @@
 
     <!-- randomly generate obstacles -->
     <arg name="random" default="0" />
+    <arg name="map" default="0" />
 
     <!-- radius of the obstacles -->
     <arg name="radius" default="0.01" />
@@ -21,7 +22,10 @@
     <arg name="n_compliant" default="0" />    
     <arg name="stiffness_value" default="0" />    
 
-    <rosparam command="delete" param="m3" />
+    <group unless="$(arg map)" >
+      <!-- If we want to use a predefined map structure, this will be preloaded on the param server.-->
+      <rosparam command="delete" param="m3" />
+    </group>
     <rosparam command="delete" param="roslaunch" />
 
     <rosparam> 
@@ -73,6 +77,10 @@
         <node pkg="hrl_common_code_darpa_m3" type="obstacles.py" output="log"
             name="obstacles" args="--fixed=$(arg n_fixed) --sliding=$(arg n_sliding) --xmin=0.2 --xmax=0.6 --ymin=-0.5 --ymax=0.2 --radius=$(arg radius) --compliant=$(arg n_compliant) --stiffness_value=$(arg stiffness_value)" />
     </group>
+
+    <!--<group if="$(arg map)">
+        <rosparam command="load" file="$(find hrl_traversability_planner)/maps/ode/map1.yaml" />
+    </group> -->
 
     <!-- visualization nodes -->
     <node pkg="hrl_software_simulation_darpa_m3"

@@ -15,23 +15,31 @@ import hrl_lib.matplotlib_util as mpu
 
 # X coordinate of obstacle is along the Y-axis of matplotlib and Y
 # coordinate of the obstacles increase to the left.
-def draw_obstacles(pos_list, dimen_list, color):
+def draw_obstacles(ctype_list, pos_list, dimen_list, color):
     if len(pos_list) == 0:
         return
-    arr = np.array(pos_list)
-    pos_arr = arr[:,0:2]
-    rad_arr = (np.array(dimen_list)[:,0]).flatten()
-    for i in range(len(rad_arr)):
+    pos_arr = np.array(pos_list)
+
+    for i in range(len(ctype_list)):
         cx, cy = -pos_arr[i,1], pos_arr[i,0]
-        mpu.plot_circle(cx, cy, rad_arr[i], 0., math.pi*2, color=color)
-        #mpu.plot_circle(cx, cy, rad_arr[i], 0., math.pi*2,
-        #                color='k', linewidth=0.5)
+
+        if ctype_list[i] == 'wall':
+            # x,y is exchanged
+            length = dimen_list[i][1]
+            width  = dimen_list[i][0]
+            slope  = pos_arr[i,3] 
+
+            mpu.plot_rectangle(cx, cy, slope, width, length, color=color)
+        else:
+            radius = dimen_list[i][0]
+            mpu.plot_circle(cx, cy, radius, 0., math.pi*2, color=color)    
+            #mpu.plot_circle(cx, cy, rad_arr[i], 0., math.pi*2,
+            #                color='k', linewidth=0.5)
 
 def draw_obstacles_from_reach_problem_dict(d):
-    n = d['num_fixed_used']
-    draw_obstacles(d['fixed_position'][0:n], d['fixed_dimen'][0:n], color='r')
-    n = d['num_move_used']
-    draw_obstacles(d['moveable_position'][0:n], d['moveable_dimen'][0:n], color='#A0A0A0')
+    draw_obstacles(d['fixed_ctype'], d['fixed_position'], d['fixed_dimen'], color='r')
+    draw_obstacles(d['moveable_ctype'], d['moveable_position'], d['moveable_dimen'], color='#A0A0A0')
+            
     pp.xlabel('Negative Y-coordinate in the robot\'s frame')
     pp.ylabel('X-coordinate in the robot\'s frame')
 

@@ -111,7 +111,7 @@ class WaypointGenerator():
       self.initCody()
     elif (self.opt.robot == "pr2"):
       self.initPR2()
-    elif(self.opt.robot == "sim3"):
+    elif(self.opt.robot == "sim3" or self.opt.robot == "sim3_nolim"):
       self.initSim3()
     elif(self.opt.robot == "simcody"):
       self.initSimCody()

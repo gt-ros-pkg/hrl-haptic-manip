@@ -102,8 +102,8 @@ class RobotHapticStateServer():
       self.initCody()
     elif robot_type == "cody5dof":
       self.initCody(5)
-    elif robot_type == "sim3":
-      self.initSim()
+    elif robot_type == "sim3" or robot_type == "sim3_nolim":
+      self.initSim(robot_type)
     elif robot_type == "crona":
       self.initCrona()
     else:
@@ -215,12 +215,17 @@ class RobotHapticStateServer():
 
   ## Initialise parameters for the state publisher when used in simulation
   #with the 3DOF arm.
-  def initSim(self):
+  def initSim(self, robot_type='sim3'):
     import gen_sim_arms as sim_robot
-    import hrl_common_code_darpa_m3.robot_config.three_link_planar_capsule as sim_robot_config
-
+    
     # Load the skin list from the param server
+    if robot_type == 'sim3':
+      import hrl_common_code_darpa_m3.robot_config.three_link_planar_capsule as sim_robot_config
+    elif robot_type == 'sim3_nolim':
+      import hrl_common_code_darpa_m3.robot_config.three_link_planar_capsule_nolim as sim_robot_config
+
     self.robot_path = '/sim3'
+      
     self.skin_topic_list = rospy.get_param(self.base_path +
                                            self.robot_path +
                                            '/skin_list/' + self.opt.sensor)
@@ -244,8 +249,6 @@ class RobotHapticStateServer():
     sim_config = sim_robot_config
     self.robot = sim_robot.ODESimArm(sim_config) 
 
-
-    self.robot_path = '/sim3'
     self.joint_limits_max = rospy.get_param(self.base_path +
                                             self.robot_path +
                                             '/joint_limits/max')

@@ -38,6 +38,8 @@ if __name__ == '__main__':
                  dest='tl_with_hand')
     p.add_option('--planar_three_link_capsule', action='store_true',
                  dest='pt_capsule', help='this specifies a 3 link capsule robot')
+    p.add_option('--planar_three_link_capsule_nolim', action='store_true',
+                 dest='pt_capsule_nolim', help='this specifies a 3 link capsule robot with broad joint limit')    
     p.add_option('--multi_link_three_planar', action='store_true',
                  dest='p_3_link', help='this specifies a 3 link capsule robot with equal link length')
     p.add_option('--multi_link_four_planar', action='store_true',
@@ -58,6 +60,9 @@ if __name__ == '__main__':
 
     if opt.pt_capsule:
         import hrl_common_code_darpa_m3.robot_config.three_link_planar_capsule as mod
+
+    if opt.pt_capsule_nolim:
+        import hrl_common_code_darpa_m3.robot_config.three_link_planar_capsule_nolim as mod        
 
     if opt.tl_with_hand:
         import hrl_common_code_darpa_m3.robot_config.three_link_with_hand as mod

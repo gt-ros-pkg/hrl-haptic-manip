@@ -1,5 +1,0 @@
-directions for running simple models:
--open and run 'matlab_start.m' - this file contains the physics model, the spring constants and the gains
--run 'mpctool' in matlab command if you want to tune or make a new mpc controller based on the physics model in 'matlab_start.m'
--rerun 'matlab_start.m' if you've designed a new mpc controller
--open the simulink model 'linear_1_dof_quasi_static_discrete.mdl'

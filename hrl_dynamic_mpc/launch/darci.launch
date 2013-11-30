@@ -1,8 +1,0 @@
-<launch>
-    <node pkg="shm_humanoid_controller" name="humanoid_controller" type="shm_humanoid_controller"> </node>
-    <node pkg="shm_omnibase_controller" name="omnibase_controller" type="shm_omnibase_controller" > </node>
-    <node pkg="shm_loadx6_publisher" name="loadx6_publisher" type="shm_loadx6_publisher" >  </node>
-    <node pkg="tf" type="static_transform_publisher" name="torso_lift_link_broadcaster" args="0., 0., 0.2337, 0., 0., 0., 1. upper torso_lift_link 100" > </node>
-
-
-</launch>

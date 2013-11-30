@@ -40,11 +40,15 @@ set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
 
 include_directories(include)
 
+#rosbuild_add_executable(simulator_dpark src/simulator_dpark.cpp)
+#target_link_libraries(simulator_dpark ode)
+#rosbuild_add_compile_flags(simulator_dpark -g -O2)
+
 rosbuild_add_executable(simulator src/simulator.cpp)
 target_link_libraries(simulator ode)
 rosbuild_add_compile_flags(simulator -g -O2)
 
-# rosbuild_add_executable(tune_gains src/tune_gains_sim.cpp)
-# target_link_libraries(tune_gains ode)
-# rosbuild_add_compile_flags(tune_gains -g -O2)
+rosbuild_add_executable(tune_gains src/tune_gains_sim.cpp)
+target_link_libraries(tune_gains ode)
+rosbuild_add_compile_flags(tune_gains -g -O2)
 

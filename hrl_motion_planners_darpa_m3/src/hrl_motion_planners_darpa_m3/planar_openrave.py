@@ -178,6 +178,9 @@ if __name__ == '__main__':
     elif opt.linkage == 'six_link_planar':
         import hrl_common_code_darpa_m3.robot_config.six_link_planar as robot_defn
 
+    elif opt.linkage == 'three_link_planar_cody':
+        import hrl_common_code_darpa_m3.robot_config.three_link_planar_cody as robot_defn
+
     else:
         print 'Unrecognized linkage: %s'%opt.linkage
         print 'Options are: three_link_planar, six_link_planar'

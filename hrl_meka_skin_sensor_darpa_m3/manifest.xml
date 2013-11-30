@@ -14,7 +14,6 @@
   <depend package="hrl_lib"/>
   <depend package="geometry_msgs"/>
   <depend package="hrl_msgs"/>
-  <depend package="m3skin_rviz_demo"/>
 
   <depend package="hrl_haptic_manipulation_in_clutter_msgs"/>
 

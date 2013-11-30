@@ -19,12 +19,14 @@ def get_arrow_text_markers(p, f, frame, m_id, duration, c=(1.,0.,0.,1.0)):
     #arrow_len = np.linalg.norm(f) * 0.007
     f_unit = f/np.linalg.norm(f)
 
-    #if 'electric' not in roslib.__path__[0]:
-    #    # diamondback
-    #    scale = (arrow_len, 0.1, 0.1)
-    #else:
-    # electric
-    scale = (0.20, 0.20, arrow_len)
+    if 'fuerte' in roslib.__path__[0]:
+        scale = (0.20, 0.20, arrow_len)        
+    elif 'electric' not in roslib.__path__[0]:
+        # diamondback
+        scale = (arrow_len, 0.1, 0.1)
+    else:
+        # electric
+        scale = (0.20, 0.20, arrow_len)
 
     m1 = hv.single_marker(p, q, 'arrow', frame, scale, c, m_id = m_id,
                           duration = duration)
@@ -75,7 +77,7 @@ def visualize_skin(sc, callback_args):
             m3.header.stamp = sc.header.stamp
             m4.header.stamp = sc.header.stamp
             marker_pub.publish(m3)
-            #marker_pub.publish(m4)
+            marker_pub.publish(m4)
 
 
 

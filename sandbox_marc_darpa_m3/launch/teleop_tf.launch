@@ -1,0 +1,17 @@
+
+<launch>
+    <!-- Need a static transform between world and torso_lift_link-->
+    <!-- args="0.3707 -0.1057 -0.2567 0 0 0 1 torso_lift_link omni2_link0 100" -->
+    <node pkg="tf" name="static_tf_torso_omni_broadcaster"
+    	  type="static_transform_publisher"
+	  args="0.5357 -0.1057 -0.5167 0 0 0 1 torso_lift_link omni2 100"
+
+	  respawn="false" output="screen"/>
+
+    <node pkg="tf" name="static_tf_center_omni_broadcaster"
+    	  type="static_transform_publisher"
+	  args="-0.165 0.0 0.11 0 0 0 1 omni2_link0 omni2_center  100"
+	  respawn="false" output="screen"/>
+</launch>
+
+

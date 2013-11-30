@@ -14,7 +14,7 @@ sensor.
     <!-- Old Meka Code
     <node name="skin_publisher" pkg="m3skin_calibration" type="m3skin_calibration" respawn="true"/>
     -->
-    <node name="skin_patch_calibration" pkg="hrl_meka_skin_sensor_darpa_m3" type="skin_patch_calibration.py" ns='skin_patch_forearm_right'/>
-    <node name="pressure_visualizer" pkg="m3skin_viz" type="m3skin_viz" ns='skin_patch_forearm_right'/>
+    <node name="skin_patch_calibration" pkg="hrl_meka_skin_sensor_darpa_m3" type="skin_patch_calibration.py" />
+    <node name="pressure_visualizer" pkg="m3skin_viz" type="m3skin_viz" />
 </launch>
 

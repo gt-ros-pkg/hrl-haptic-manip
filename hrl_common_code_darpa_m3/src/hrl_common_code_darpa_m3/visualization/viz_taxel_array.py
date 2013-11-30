@@ -35,7 +35,7 @@ def visualize_taxel_array(ta, marker_pub):
 
     # now draw non-zero forces as arrows.
     nrmls = np.column_stack((ta.normals_x, ta.normals_y, ta.normals_z))
-    fs = np.column_stack((ta.values_x, ta.values_y, ta.values_z))
+    fs = np.column_stack((ta.forces_x, ta.forces_y, ta.forces_z))
 
     fmags = ut.norm(fs.T).flatten()
 
@@ -57,10 +57,10 @@ def visualize_taxel_array(ta, marker_pub):
         l1 = (n2.T * n1)[0,0] * force_marker_scale
 
 
-        #if 'electric' not in roslib.__path__[0]:
-        #    scale = (l1, 0.2, 0.2)
-        #else:
-        scale = (0.2, 0.2, l1)
+        if 'electric' not in roslib.__path__[0]:
+            scale = (l1, 0.2, 0.2)
+        else:
+            scale = (0.2, 0.2, l1)
 
         m = hv.single_marker(p, q1, 'arrow', frame, duration=duration,
                              scale=scale, m_id=3*i+1)
@@ -70,10 +70,10 @@ def visualize_taxel_array(ta, marker_pub):
         q2 = hv.arrow_direction_to_quat(n2)
         l2 = np.linalg.norm(n2) * force_marker_scale
 
-        #if 'electric' not in roslib.__path__[0]:
-        #    scale = (l2, 0.2, 0.2)
-        #else:
-        scale = (0.2, 0.2, l2)
+        if 'electric' not in roslib.__path__[0]:
+            scale = (l2, 0.2, 0.2)
+        else:
+            scale = (0.2, 0.2, l2)
 
         m = hv.single_marker(p, q2, 'arrow', frame, duration=duration,
                              scale=scale, color=(0.,0.5,0.,1.0),

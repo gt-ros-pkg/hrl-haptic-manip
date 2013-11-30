@@ -1,11 +1,17 @@
 #include "ros/ros.h"
+#include <ros/callback_queue.h>
 #include <boost/thread/mutex.hpp>
 #include "hrl_haptic_manipulation_in_clutter_msgs/SkinContact.h"
 #include "hrl_haptic_manipulation_in_clutter_msgs/BodyDraw.h"
 #include "hrl_haptic_manipulation_in_clutter_msgs/TaxelArray.h"
 #include "hrl_haptic_manipulation_in_clutter_msgs/MechanicalImpedanceParams.h"
+#include "hrl_haptic_manipulation_in_clutter_msgs/ContactTable.h"
 #include "hrl_msgs/FloatArrayBare.h"
 #include "std_msgs/String.h"
+#include "std_msgs/Float64.h"
+#include "std_msgs/Bool.h"
+#include "std_msgs/Int32MultiArray.h"
+//#include "roslib/Clock.h"
 #include <tf/transform_broadcaster.h>  
 #include "rosgraph_msgs/Clock.h"
 #include <cmath>
@@ -18,25 +24,50 @@
 #include <ode/ode.h>
 #include <sstream>
 
+//#include <drawstuff/drawstuff.h>
+//#include "texturepath.h"
+
+
 #ifdef dDOUBLE
 #define MAX_CONTACTS 20          // maximum number of contact points per body
 #define MAX_FEEDBACKNUM 100
 #define NUM_OBST 1000
 #define MAX_NUM_REV 30
 #define MAX_NUM_PRISM 30
+#define MAX_NUM_UNI 30
 #define PI 3.14159265
 #endif
+dSimpleSpace space;
+dWorld world;
+int num_used_movable = NUM_OBST;
+int num_used_fixed = NUM_OBST;
+int num_used_compliant = NUM_OBST;
+const dReal timestep = 0.0005;
+double cur_time = 0.0;
+boost::mutex m;
+
 
 struct MyFeedback {
     dJointFeedback fb;
 };
 
+static int obst_table_ID[NUM_OBST];
+static bool obst_table_contact[NUM_OBST];
+
+/*
+struct ObjectContactTable {
+  dBodyID id;
+  bool    bContact;
+};
+*/
 
 class Simulator{
     public:
         //  bool got_image;
         Simulator(ros::NodeHandle &nh);
         ~Simulator();
+	void controller_running_cb(const std_msgs::Bool msg);
+	//void opt_finished_cb(const std_msgs::Bool msg);
         void JepCallback(const hrl_msgs::FloatArrayBare msg);
         void ImpedanceCallback(const hrl_haptic_manipulation_in_clutter_msgs::MechanicalImpedanceParams msg);
         void BaseEpCallback(const hrl_msgs::FloatArrayBare msg);
@@ -57,21 +88,24 @@ class Simulator{
         void update_friction_and_obstacles();
         void get_joint_data();	
         void clear();
-        void update_taxel_simulation();
-        void update_proximity_simulation();
-	double get_dist(double x1, double y1, double x2, double y2, double radius);
-	void setup_current_taxel_config(hrl_haptic_manipulation_in_clutter_msgs::TaxelArray &taxel);
+        void update_taxel_simulation(double resolution);
         ros::Publisher clock_pub; 
-	dSimpleSpace space;
-	dWorld world;
-	static const dReal timestep=0.0005;
-	double cur_time;
+	double last_jep_time;
+	bool controller_running;
+        void publish_contact_table();
+        static void init_contact_table(int index, int id, int contact);
+	/* bool running; */
+	/* ros::Publisher waiting_pub; */
+	/* ros::Publisher done_waiting_pub; */
 
     protected:
         dHingeJoint manip_rev_jts[MAX_NUM_REV];
         dHingeJoint base_rev_jts[MAX_NUM_REV];
         dSliderJoint manip_pris_jts[MAX_NUM_PRISM];
         dSliderJoint base_pris_jts[MAX_NUM_PRISM];
+        dUniversalJoint manip_uni_jts[MAX_NUM_UNI];
+        dUniversalJoint base_uni_jts[MAX_NUM_UNI];
+
         dBody obstacles[NUM_OBST];
         dBody fixed_obstacles[NUM_OBST];
         dBody compliant_obstacles[NUM_OBST];
@@ -84,11 +118,16 @@ class Simulator{
         std::string links_shape[100];
         dBox g_link_box[100];
         dCapsule g_link_cap[100];
+        dSphere g_link_sph[100];
+
         dBodyID link_ids[100];
-        dBodyID fixed_obst_ids[NUM_OBST];
+        //dBodyID fixed_obst_ids[NUM_OBST];
+        //dBodyID movable_obst_ids[NUM_OBST];
         dJointID plane2d_joint_ids[NUM_OBST];
         dJointID compliant_plane2d_joint_ids[NUM_OBST];
         dJointID fixed_joint_ids[NUM_OBST];
+
+        hrl_haptic_manipulation_in_clutter_msgs::ContactTable contact_table;
 
         dBody *body_mobile_base;
         dBox *geom_mobile_base;
@@ -98,10 +137,8 @@ class Simulator{
         hrl_msgs::FloatArrayBare angle_rates;
         hrl_msgs::FloatArrayBare jep_ros;
 
-	bool use_prox_sensor;
         int num_links;
         int num_jts;
-	double resolution;
         ros::NodeHandle nh_;
         MyFeedback feedbacks[MAX_FEEDBACKNUM];
         MyFeedback frict_feedbacks[NUM_OBST];
@@ -141,8 +178,7 @@ class Simulator{
 
         hrl_haptic_manipulation_in_clutter_msgs::SkinContact skin;
         hrl_haptic_manipulation_in_clutter_msgs::BodyDraw draw;
-        hrl_haptic_manipulation_in_clutter_msgs::TaxelArray force_taxel;
-        hrl_haptic_manipulation_in_clutter_msgs::TaxelArray proximity_taxel;
+        hrl_haptic_manipulation_in_clutter_msgs::TaxelArray taxel;
         hrl_haptic_manipulation_in_clutter_msgs::MechanicalImpedanceParams impedance_params;
 
         dSliderJoint *slider_x;
@@ -152,56 +188,58 @@ class Simulator{
         ros::Publisher angles_pub;
         ros::Publisher angle_rates_pub;
         ros::Publisher bodies_draw;
-        ros::Publisher force_taxel_pub;
-        ros::Publisher proximity_taxel_pub;
+        ros::Publisher taxel_pub;
         ros::Publisher imped_pub;
         ros::Publisher skin_pub;
         ros::Publisher jep_pub;
-
-	int num_used_movable;
-	int num_used_fixed;
-	int num_used_compliant;
-
-	boost::mutex m;
+	ros::Publisher controller_time_pub;
+        ros::Publisher contact_table_pub;
+	
+	ros::Subscriber controller_running_sub;
+	/* ros::Subscriber opt_finished; */
 
 };
 
 Simulator::Simulator(ros::NodeHandle &nh) :
     nh_(nh)
 {
-    num_used_movable = NUM_OBST;
-    num_used_fixed = NUM_OBST;
-    num_used_compliant = NUM_OBST;
-
-    //timestep = 0.0005;
-    cur_time = 0.0;
-
-    resolution = 0;
-    use_prox_sensor = false;
     num_links = 0;
     num_jts = 0;
+
     while (nh_.getParam("/m3/software_testbed/linkage/num_links", num_links) == false)
         sleep(0.1);
+
     while (nh_.getParam("/m3/software_testbed/joints/num_joints", num_jts) == false)
         sleep(0.1);
-    while (nh_.getParam("/use_prox_sensor", use_prox_sensor) == false)
-        sleep(0.1);
-    while (nh_.getParam("/m3/software_testbed/resolution", resolution) == false)
-        sleep(0.1);
+
+    //init member variables
     fbnum=0;
     force_group=0;
     max_friction = 2;
     max_tor_friction = 0.5;
+    last_jep_time = 0.0;
+    controller_running = false;
+    //running = false;
+
+    //init all ros publishers
     angles_pub = nh_.advertise<hrl_msgs::FloatArrayBare>("/sim_arm/joint_angles", 100);
     angle_rates_pub = nh_.advertise<hrl_msgs::FloatArrayBare>("/sim_arm/joint_angle_rates", 100);  
     bodies_draw = nh_.advertise<hrl_haptic_manipulation_in_clutter_msgs::BodyDraw>("/sim_arm/bodies_visualization", 100);
-    force_taxel_pub = nh_.advertise<hrl_haptic_manipulation_in_clutter_msgs::TaxelArray>("/skin/taxel_array", 100);
-    proximity_taxel_pub = nh_.advertise<hrl_haptic_manipulation_in_clutter_msgs::TaxelArray>("/haptic_mpc/simulation/proximity/taxel_array", 100);
+    taxel_pub = nh_.advertise<hrl_haptic_manipulation_in_clutter_msgs::TaxelArray>("/skin/taxel_array", 100);
     imped_pub = nh_.advertise<hrl_haptic_manipulation_in_clutter_msgs::MechanicalImpedanceParams>("sim_arm/joint_impedance", 100);
     skin_pub = nh_.advertise<hrl_haptic_manipulation_in_clutter_msgs::SkinContact>("/skin/contacts", 100);
     jep_pub = nh_.advertise<hrl_msgs::FloatArrayBare>("/sim_arm/jep", 100);
     clock_pub = nh_.advertise<rosgraph_msgs::Clock>("/clock", 1/timestep);
+    controller_time_pub = nh_.advertise<std_msgs::Float64>("/controller_time_step", 100);
+    controller_running_sub = nh_.subscribe("/epc_skin/local_controller/controller_running", 100, &Simulator::controller_running_cb, this);
+    contact_table_pub = nh_.advertise<hrl_haptic_manipulation_in_clutter_msgs::ContactTable>("/sim_arm/contact_table", 100);
 
+    /* opt_finished = nh_.subscribe("/epc_skin/local_controller/finish_optimization", 100, &Simulator::opt_finished_cb, this); */
+    /* waiting_pub = nh_.advertise<std_msgs::Bool>('/epc_skin/local_controller/got_start_optimization', 100); */
+    /* done_waiting_pub = nh_.advertise<std_msgs::Bool>('/epc_skin/local_controller/got_finish_optimization', 100); */
+
+
+    //init joint angles and joint controller gains
     m.lock();
     for (int ii = 0; ii < num_jts; ii++)
     {
@@ -222,10 +260,34 @@ Simulator::~Simulator()
 using namespace std;
 
 
+void Simulator::controller_running_cb(const std_msgs::Bool msg)
+{
+  controller_running = msg.data;
+  /* if (msg.data) */
+  /*   { */
+  /*     controller_running=true; */
+  /*   } */
+}
+
+/* void Simulator::opt_finished_cb(const std_msgs::Bool msg) */
+/* { */
+/*   if (msg.data) */
+/*     { */
+/*       waiting=false; */
+/*       running=true; */
+/*     } */
+
+/* } */
+
+
 void Simulator::JepCallback(const hrl_msgs::FloatArrayBare msg)
 {
     m.lock();
     jep = msg.data;
+    std_msgs::Float64 time_step_cont;
+    time_step_cont.data = cur_time-last_jep_time;
+    controller_time_pub.publish(time_step_cont);
+    last_jep_time = cur_time;
     m.unlock();
 }
 
@@ -278,6 +340,26 @@ void Simulator::nearCallback(void *data, dGeomID o1, dGeomID o2)
         }
     }
 
+    // Check object ids
+    if (is_b1){
+      //printf("%d\n", b2);
+      for (int i=0; i<num_used_movable+num_used_fixed; i++){
+        if (obst_table_ID[i] == (int)b2){
+          obst_table_contact[i] = true;
+          break;
+        }
+      }
+    }
+    else{
+      //printf("%d\n", b1);
+      for (int i=0; i<num_used_movable+num_used_fixed; i++){
+        if (obst_table_ID[i] == (int)b1){
+          obst_table_contact[i] = true;
+          break;
+        }
+      }
+    }
+
     dContact contact[MAX_CONTACTS];   // up to MAX_CONTACTS contacts per box-box
     int numc = dCollide (o1, o2, MAX_CONTACTS, &(contact[0].geom), sizeof(dContact));
     if (numc > 0)
@@ -293,7 +375,7 @@ void Simulator::nearCallback(void *data, dGeomID o1, dGeomID o2)
                 contact[i].surface.soft_cfm = 0.04;
                 contact[i].surface.soft_erp = 0.96;
 
-                dJointID c = dJointCreateContact (obj->world,obj->joints.id(), &contact[i]);
+                dJointID c = dJointCreateContact (world,obj->joints.id(), &contact[i]);
                 dJointAttach (c, dGeomGetBody(contact[i].geom.g1),
                         dGeomGetBody(contact[i].geom.g2));
             }
@@ -320,7 +402,7 @@ void Simulator::nearCallback(void *data, dGeomID o1, dGeomID o2)
                 obj->pt_y.push_back(contact[i].geom.pos[1]);
                 obj->pt_z.push_back(contact[i].geom.pos[2]);
 
-                dJointID c = dJointCreateContact (obj->world,obj->joints.id(),&contact[i]);
+                dJointID c = dJointCreateContact (world,obj->joints.id(),&contact[i]);
                 dJointAttach (c,b1,b2);
 
                 if (obj->fbnum < MAX_FEEDBACKNUM)
@@ -511,6 +593,9 @@ void Simulator::create_robot()
     XmlRpc::XmlRpcValue link_shapes;
     while (nh_.getParam("/m3/software_testbed/linkage/shapes", link_shapes) == false)
         sleep(0.1);
+    XmlRpc::XmlRpcValue link_rot;
+    while (nh_.getParam("/m3/software_testbed/linkage/rotations", link_rot) == false)
+        sleep(0.1);
 
     XmlRpc::XmlRpcValue link_masses;
     while (nh_.getParam("/m3/software_testbed/linkage/mass", link_masses) == false)
@@ -566,6 +651,9 @@ void Simulator::create_robot()
     XmlRpc::XmlRpcValue jt_attach;
     while (nh_.getParam("m3/software_testbed/joints/attach", jt_attach) == false)
         sleep(0.1);
+    XmlRpc::XmlRpcValue jt_type;
+    while (nh_.getParam("m3/software_testbed/joints/types", jt_type) == false)
+        sleep(0.1);
 
 
     dMatrix3 body_rotate = {1, 0, 0, 0, 0, 0, 1, 0, 0, -1, 0, 0};
@@ -597,24 +685,43 @@ void Simulator::create_robot()
             g_link_cap[ii].create(space, (double)link_dimensions[ii][0]/2.0, (double)link_dimensions[ii][2]);
             g_link_cap[ii].setBody(links_arr[ii]);
         }
+        else if (links_shape[ii] == "sphere")
+        {
+            dMassSetSphereTotal(&mass, (double)link_masses[ii], (double)link_dimensions[ii][2]/2.0);
+            links_arr[ii].setMass(mass);
+            g_link_sph[ii].create(space, (double)link_dimensions[ii][2]/2.0);
+            g_link_sph[ii].setBody(links_arr[ii]);
+        }
         else
         {
             std::cerr<<"wrong type of link shape was defined in config file,"<<links_shape[ii]<<" does not exist \n";
             assert(false);
         }
-        links_arr[ii].setRotation(body_rotate);
+
+        // TODO!! multi-axis rotation
+        if (((double)link_rot[ii][0] != 0.0) || ((double)link_rot[ii][1] != 0.0) || ((double)link_rot[ii][2] != 0.0))
+        {
+            if ((double)link_rot[ii][0] != 0.0)
+              dRFromAxisAndAngle(body_rotate, 1, 0, 0, (double)link_rot[ii][0]);
+            else if ((double)link_rot[ii][1] != 0.0)
+              dRFromAxisAndAngle(body_rotate, 0, 1, 0, (double)link_rot[ii][1]);
+            else if ((double)link_rot[ii][2] != 0.0)
+              dRFromAxisAndAngle(body_rotate, 0, 0, 1, (double)link_rot[ii][2]);
+            links_arr[ii].setRotation(body_rotate);
+        }
+        
         link_ids[ii] = links_arr[ii].id();
     }
 
     for (int ii = 0; ii < num_jts; ii++)
     {
-        if (true)
+        if (jt_type[ii] == "hinge")
         {
             manip_rev_jts[ii].create(world);
             int attach1, attach2;
 
-            attach1 = (int)jt_attach[ii][0];
-            attach2 = (int)jt_attach[ii][1];
+            attach1 = (int)jt_attach[ii][0]; // Current Joint?
+            attach2 = (int)jt_attach[ii][1]; // Last Joint?
             if (attach1 == -1 or attach2 == -1)
             {
                 if (attach1 == -1)
@@ -640,6 +747,41 @@ void Simulator::create_robot()
             // std::vector<dHingeJoint> base_rev_jts;
             // std::vector<dSliderJoint> base_pris_jts;
 
+        }
+        else if (jt_type[ii] == "universal")
+        {
+          //TODO: need to code!!
+          /*
+            manip_uni_jts[ii].create(world);
+            int attach1, attach2;
+
+            attach1 = (int)jt_attach[ii][0]; // Current Joint?
+            attach2 = (int)jt_attach[ii][1]; // Last Joint?
+            if (attach1 == -1 or attach2 == -1)
+            {
+                if (attach1 == -1)
+                {
+                    manip_rev_jts[ii].attach(0, links_arr[attach2]);
+                }
+                else
+                {
+                    manip_rev_jts[ii].attach(links_arr[attach1], 0);
+                }
+            }
+            else
+            {
+                manip_rev_jts[ii].attach(links_arr[attach1], links_arr[attach2]);
+            }
+
+            manip_rev_jts[ii].setAnchor((double)jt_anchor[ii][0], (double)jt_anchor[ii][1], (double)jt_anchor[ii][2]);
+            manip_rev_jts[ii].setAxis((double)jt_axes[ii][0], (double)jt_axes[ii][1], (double)jt_axes[ii][2]);
+            dJointSetHingeParam(manip_rev_jts[ii].id(),dParamLoStop, (double)jt_min[ii]);
+            dJointSetHingeParam(manip_rev_jts[ii].id(),dParamHiStop, (double)jt_max[ii]);
+            // std::vector<dHingeJoint> manip_rev_jts;
+            // std::vector<dSliderJoint> manip_pris_jts;
+            // std::vector<dHingeJoint> base_rev_jts;
+            // std::vector<dSliderJoint> base_pris_jts;
+            */
         }
         else if (false)
         {
@@ -726,9 +868,9 @@ void Simulator::update_friction_and_obstacles()
 {
     hrl_msgs::FloatArrayBare obst_pos_ar;
     hrl_msgs::FloatArrayBare obst_rot_ar;
+
     const dReal *position;
     const dReal *rotation;
-
     std::vector<double> pos_vec(3);
     std::vector<double> rot_vec(12);
 
@@ -773,35 +915,32 @@ void Simulator::update_friction_and_obstacles()
         draw.obst_rot.push_back(obst_rot_ar);
     }
 
+
     for (int l = 0; l<num_used_compliant; l++)
     {
         dJointSetPlane2DXParam(compliant_plane2d_joint_ids[l], dParamFMax, 0);
         dJointSetPlane2DYParam(compliant_plane2d_joint_ids[l], dParamFMax, 0);
         const dReal *cur_pos;
         cur_pos = dBodyGetPosition(compliant_obstacles[l].id());
+        rotation = dBodyGetRotation(obstacles[l].id());  //this is to initialize correctly
         const dReal *cur_vel;
         cur_vel = dBodyGetLinearVel(compliant_obstacles[l].id());
-        rotation = dBodyGetRotation(compliant_obstacles[l].id());  //this is to initialize correctly
-
         //this is the control law used to simulate compliant objects with critical damping
         dReal Fx = (obst_home[l][0]-cur_pos[0])*obst_stiffness[l] - cur_vel[0]*obst_damping[l];
         dReal Fy = (obst_home[l][1]-cur_pos[1])*obst_stiffness[l] - cur_vel[1]*obst_damping[l];
 
         dBodyAddForce(compliant_obstacles[l].id(), Fx, Fy, 0);
-        //dBodyAddForce(compliant_obstacles[l].id(), 0, 0, 0);
+        dBodyAddForce(compliant_obstacles[l].id(), 0, 0, 0);
 
         pos_vec[0] = cur_pos[0];
         pos_vec[1] = cur_pos[1];
         pos_vec[2] = cur_pos[2];
-
         obst_pos_ar.data = pos_vec;
         draw.obst_loc.push_back(obst_pos_ar);
-
         for (int k = 0; k<12; k++)
         {
             rot_vec[k] = rotation[k];
         }
-
         obst_rot_ar.data = rot_vec;
         draw.obst_rot.push_back(obst_rot_ar);
     }
@@ -839,11 +978,10 @@ void Simulator::publish_imped_skin_viz()
     draw.header.frame_id = "/world";
     draw.header.stamp = ros::Time::now();
     bodies_draw.publish(draw);
-    force_taxel_pub.publish(force_taxel);
-    proximity_taxel_pub.publish(proximity_taxel);
+    taxel_pub.publish(taxel);
 }
 
-void Simulator::setup_current_taxel_config(hrl_haptic_manipulation_in_clutter_msgs::TaxelArray &taxel)
+void Simulator::update_taxel_simulation(double resolution)
 {
     taxel.header.frame_id = "/world";
     taxel.header.stamp = ros::Time::now();
@@ -948,6 +1086,9 @@ void Simulator::setup_current_taxel_config(hrl_haptic_manipulation_in_clutter_ms
             k = 0;
             num = floor(resolution*(link_width+0.0001))+1;
 
+            // still need to fix for capsules////////////****************************************/
+            // still need to fix for capsules////////////****************************************/
+            // still need to fix for capsules////////////****************************************/
             while (k < num)
             {
                 if (k < 2)
@@ -1118,87 +1259,6 @@ void Simulator::setup_current_taxel_config(hrl_haptic_manipulation_in_clutter_ms
             }
         }
     }
-}
-
-double Simulator::get_dist(double x1, double y1, double x2, double y2, double radius)
-{
-  return sqrt((x1-x2)*(x1-x2) + (y1-y2)*(y1-y2)) - radius;
-}
-
-void Simulator::update_proximity_simulation()
-{
-  if (use_prox_sensor == true)
-    {
-      setup_current_taxel_config(proximity_taxel);
-      proximity_taxel.sensor_type = "distance";
-      
-      const dReal *position;
-      for (uint i=0; i < proximity_taxel.link_names.size(); i++)
-	{
-	  double min_dist = 0.35;
-	  double x_taxel = proximity_taxel.centers_x[i];
-	  double y_taxel = proximity_taxel.centers_y[i];
-	  double nrml_x =  proximity_taxel.normals_x[i];
-	  double nrml_y =  proximity_taxel.normals_y[i];
-
-	  //this should be dynamic for reach object in future versions
-	  double radius = 0.01;
-
-	  //check every movable, fixed and compliant obstacle within 45 degree fov of taxel for min normal dist
-	  for (int j=0; j < num_used_movable ; j++)
-	    {
-	      position = dBodyGetPosition(obstacles[j].id());
-	      double cur_dist = get_dist(position[0], position[1], x_taxel, y_taxel, radius);
-	      if ( cur_dist< min_dist)
-		{
-		  /* std::cerr << "cur_dist is smaller !!!!!!!!!!!!!!!!!!!!!!!! "<< std::endl; */
-		  /* std::cerr<<"cur dist is : \t"<< cur_dist << std::endl; */
-		  double dot_product = ((position[0]-x_taxel)*nrml_x + (position[1]-y_taxel)*nrml_y)/sqrt(pow(position[0]-x_taxel, 2) + pow(position[1]-y_taxel, 2));
-
-		  if (dot_product > 0.7071)
-		    {
-		      min_dist = cur_dist;
-		    }
-		}
-	    }
-	  for (int j=0; j < num_used_fixed ; j++)
-	    {
-	      position = dBodyGetPosition(fixed_obstacles[j].id());
-	      double cur_dist = get_dist(position[0], position[1], x_taxel, y_taxel, radius);
-	      if ( cur_dist< min_dist)
-		{
-		  double dot_product = ((position[0]-x_taxel)*nrml_x + (position[1]-y_taxel)*nrml_y)/sqrt(pow(position[0]-x_taxel, 2) + pow(position[1]-y_taxel, 2));
-		  if (dot_product > 0.7071)
-		    {
-		      min_dist = cur_dist;
-		    }
-		}
-	    }
-	  for (int j=0; j < num_used_compliant ; j++)
-	    {
-	      position = dBodyGetPosition(compliant_obstacles[j].id());
-	      double cur_dist = get_dist(position[0], position[1], x_taxel, y_taxel, radius);
-	      if ( cur_dist< min_dist)
-		{
-		  double dot_product = ((position[0]-x_taxel)*nrml_x + (position[1]-y_taxel)*nrml_y)/sqrt(pow(position[0]-x_taxel, 2) + pow(position[1]-y_taxel, 2));
-		  if (dot_product > 0.7071)
-		    {
-		      min_dist = cur_dist;
-		    }
-		}
-	    }
-	
-	  proximity_taxel.values_x.push_back(min_dist*nrml_x);
-	  proximity_taxel.values_y.push_back(min_dist*nrml_y);
-	  proximity_taxel.values_z.push_back(0.);
-	}
-    }    
-}	       
-
-void Simulator::update_taxel_simulation()
-{
-    setup_current_taxel_config(force_taxel);
-    force_taxel.sensor_type = "force";
 
     //doing nearest neighbor to assign forces to discrete taxels
     std::vector < int > f_ind;
@@ -1220,15 +1280,15 @@ void Simulator::update_taxel_simulation()
         // okayish solution.
         int ind_buf = -134241;
 
-        for (unsigned int k = 0; k <  force_taxel.centers_x.size(); k++)
+        for (unsigned int k = 0; k <  taxel.centers_x.size(); k++)
         {
-            float distance = sqrt(pow((force_taxel.centers_x[k]-skin.locations[j].x),2)+pow((force_taxel.centers_y[k]-skin.locations[j].y),2)+pow((force_taxel.centers_z[k]-skin.locations[j].z),2));
-            if (distance < min_distance && force_taxel.link_names[k] == skin.link_names[j])
+            float distance = sqrt(pow((taxel.centers_x[k]-skin.locations[j].x),2)+pow((taxel.centers_y[k]-skin.locations[j].y),2)+pow((taxel.centers_z[k]-skin.locations[j].z),2));
+            if (distance < min_distance && taxel_links[k] == skin.link_names[j])
             {
-                double mag_norm = sqrt(force_taxel.normals_x[k]*force_taxel.normals_x[k]+force_taxel.normals_y[k]*force_taxel.normals_y[k]);
+                double mag_norm = sqrt(taxel.normals_x[k]*taxel.normals_x[k]+taxel.normals_y[k]*taxel.normals_y[k]);
                 double mag_force = sqrt(skin.forces[j].x*skin.forces[j].x + skin.forces[j].y*skin.forces[j].y);
 
-                double dot_prod = (force_taxel.normals_x[k]*skin.forces[j].x + force_taxel.normals_y[k]*skin.forces[j].y);
+                double dot_prod = (taxel.normals_x[k]*skin.forces[j].x + taxel.normals_y[k]*skin.forces[j].y);
                 double cos_angle = dot_prod/(mag_norm*mag_force);
                 double abs_angle_deg = abs(acos(cos_angle) * 180.0 / PI);
 
@@ -1255,18 +1315,18 @@ void Simulator::update_taxel_simulation()
         f_ind.push_back(ind_buf);
     }
 
-    for (unsigned int k = 0; k < force_taxel.centers_x.size(); k++)
+    for (unsigned int k = 0; k < taxel.centers_x.size(); k++)
     {
-        force_taxel.values_x.push_back(0.0);
-        force_taxel.values_y.push_back(0.0);
-        force_taxel.values_z.push_back(0.0);
+        taxel.forces_x.push_back(0.0);
+        taxel.forces_y.push_back(0.0);
+        taxel.forces_z.push_back(0.0);
     }
 
     for (unsigned int j = 0; j <  f_ind.size(); j++)
     {
-        force_taxel.values_x[f_ind[j]] = force_taxel.values_x[f_ind[j]] + skin.forces[j].x;
-        force_taxel.values_y[f_ind[j]] = force_taxel.values_y[f_ind[j]] + skin.forces[j].y;
-        force_taxel.values_z[f_ind[j]] = force_taxel.values_z[f_ind[j]] + skin.forces[j].z;
+        taxel.forces_x[f_ind[j]] = taxel.forces_x[f_ind[j]] + skin.forces[j].x;
+        taxel.forces_y[f_ind[j]] = taxel.forces_y[f_ind[j]] + skin.forces[j].y;
+        taxel.forces_z[f_ind[j]] = taxel.forces_z[f_ind[j]] + skin.forces[j].z;
     }
 
     f_ind.clear();
@@ -1282,27 +1342,16 @@ void Simulator::clear()
     draw.obst_loc.clear();
     draw.obst_rot.clear();
 
-    force_taxel.centers_x.clear();
-    force_taxel.centers_y.clear();
-    force_taxel.centers_z.clear();
-    force_taxel.normals_x.clear();
-    force_taxel.normals_y.clear();
-    force_taxel.normals_z.clear();
-    force_taxel.values_x.clear();
-    force_taxel.values_y.clear();
-    force_taxel.values_z.clear();
-    force_taxel.link_names.clear();
-
-    proximity_taxel.centers_x.clear();
-    proximity_taxel.centers_y.clear();
-    proximity_taxel.centers_z.clear();
-    proximity_taxel.normals_x.clear();
-    proximity_taxel.normals_y.clear();
-    proximity_taxel.normals_z.clear();
-    proximity_taxel.values_x.clear();
-    proximity_taxel.values_y.clear();
-    proximity_taxel.values_z.clear();
-    proximity_taxel.link_names.clear();
+    taxel.centers_x.clear();
+    taxel.centers_y.clear();
+    taxel.centers_z.clear();
+    taxel.normals_x.clear();
+    taxel.normals_y.clear();
+    taxel.normals_z.clear();
+    taxel.forces_x.clear();
+    taxel.forces_y.clear();
+    taxel.forces_z.clear();
+    taxel.link_names.clear();
 
     skin.pts_x.clear();
     skin.pts_y.clear();
@@ -1391,6 +1440,11 @@ void Simulator::create_movable_obstacles()
 
         dJointSetFeedback(plane2d_joint_ids[i], &frict_feedbacks[i].fb);
         //obstacles.push_back(obstacle);
+        
+        //movable_obst_ids[i] = obstacles[i].id();
+        //obst_table_ID[i] = (int)(obstacles[i].id());
+        //obst_table_contact[i] = false;
+        init_contact_table(i, (int)(obstacles[i].id()), 0);
     }
 }
 
@@ -1458,47 +1512,64 @@ void Simulator::create_fixed_obstacles()
     nh_.getParam("/m3/software_testbed/fixed_position", fixed_pos);
     XmlRpc::XmlRpcValue fixed_dim;
     nh_.getParam("/m3/software_testbed/fixed_dimen", fixed_dim);
-    XmlRpc::XmlRpcValue fixed_ctype;
-    nh_.getParam("/m3/software_testbed/fixed_ctype", fixed_ctype);
-
 
     for (int i = 0; i < num_used_fixed; i++)
     {
         dMass m_obst;
-
+        dCapsule *geom_fixed;
         dMassSetCapsuleTotal(&m_obst, obstacle_mass, 3,
                 (double)fixed_dim[i][0], (double)fixed_dim[i][2]);
 
         fixed_obstacles[i].create(world);
         fixed_obstacles[i].setPosition((double)fixed_pos[i][0], (double)fixed_pos[i][1], (double)fixed_pos[i][2]);
         fixed_obstacles[i].setMass(&m_obst);
-
-        if (static_cast<std::string>(fixed_ctype[i]) == "wall")
-        {
-            dBox *geom_fixed;
-            double theta = (double)fixed_pos[i][3];
-            dMatrix3 obstacle_rotate = {cos(theta),-sin(theta),0,0,sin(theta),cos(theta),0,0,0,0,1.0,0};
-            fixed_obstacles[i].setRotation(obstacle_rotate);
-
-            fixed_joint_ids[i] = dJointCreateFixed(world.id(), 0);
-            dJointAttach(fixed_joint_ids[i], fixed_obstacles[i].id(), 0);        
-            dJointSetFixed(fixed_joint_ids[i]);
-
-            geom_fixed = new dBox(space, (double)fixed_dim[i][0], (double)fixed_dim[i][1], (double)fixed_dim[i][2]);
-            geom_fixed->setBody(fixed_obstacles[i]);
-        }
-        else
-        {
-            dCapsule *geom_fixed;
-
-            fixed_joint_ids[i] = dJointCreateFixed(world.id(), 0);
-            dJointAttach(fixed_joint_ids[i], fixed_obstacles[i].id(), 0);        
-            dJointSetFixed(fixed_joint_ids[i]);
-
-            geom_fixed = new dCapsule(space, (double)fixed_dim[i][0], (double)fixed_dim[i][2]);
-            geom_fixed->setBody(fixed_obstacles[i]);
-        }
-
+        fixed_joint_ids[i] = dJointCreateFixed(world.id(), 0);
+        dJointAttach(fixed_joint_ids[i], fixed_obstacles[i].id(), 0);
+        dJointSetFixed(fixed_joint_ids[i]);
+        geom_fixed = new dCapsule(space, (double)fixed_dim[i][0], (double)fixed_dim[i][2]);
+        geom_fixed->setBody(fixed_obstacles[i]);
         //	fixed_obstacles.push_back(fixed_obstacle);
+
+        //fixed_obst_ids[i] = fixed_obstacles[i].id();
+        //obst_table_ID[num_used_movable+i] = (int)(fixed_obstacles[i].id());
+        //obst_table_contact[num_used_movable+i] = false;
+        init_contact_table(num_used_movable+i, (int)(fixed_obstacles[i].id()), 0);
     }
 }
+
+void Simulator::publish_contact_table()
+{
+  //memcpy(obst_ID, obst_table_ID, NUM_OBST*sizeof(int));
+  //memcpy(obst_contact, obst_table_contact, NUM_OBST*sizeof(bool));
+
+  //std_msgs::Int32MultiArray id;
+  //std_msgs::Int32MultiArray contact;
+
+    contact_table.id.data.clear();
+    contact_table.contact.data.clear();
+     
+    for (int i=0; i<num_used_movable+num_used_fixed; i++)
+    {
+      contact_table.id.data.push_back(i);
+      contact_table.contact.data.push_back(obst_table_contact[i]);
+    }
+
+    //contact_table.id      = id;
+    //contact_table.contact = contact;    
+    contact_table_pub.publish(contact_table);
+}
+
+void Simulator::init_contact_table(int index, int id, int contact)
+{
+    obst_table_ID[index]      = id;
+    obst_table_contact[index] = contact;
+}
+
+double get_wall_clock_time()
+{
+    timeval tim;
+    gettimeofday(&tim, NULL);
+    double t1=tim.tv_sec+(tim.tv_usec/1000000.0);
+    return t1;
+}
+

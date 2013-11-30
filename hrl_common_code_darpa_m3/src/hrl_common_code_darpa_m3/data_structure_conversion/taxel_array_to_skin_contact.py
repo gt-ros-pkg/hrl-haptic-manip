@@ -35,14 +35,18 @@ from geometry_msgs.msg import Vector3
 
 
 def taxel_array_cb(ta, callback_args):
+    meka_taxel_saturate_threshold = 17.
+    saturated_taxel_force_value = 80.
+
     sc_pu, tf_lstnr = callback_args
     sc = SkinContact()
+    #sc.header.frame_id = ta.header.frame_id
     sc.header.frame_id = '/torso_lift_link' # has to be this and no other coord frame.
     sc.header.stamp = ta.header.stamp
 
     pts = np.column_stack((ta.centers_x, ta.centers_y, ta.centers_z))
     nrmls = np.column_stack((ta.normals_x, ta.normals_y, ta.normals_z))
-    fs = np.column_stack((ta.values_x, ta.values_y, ta.values_z))
+    fs = np.column_stack((ta.forces_x, ta.forces_y, ta.forces_z))
 
     t1, q1 = tf_lstnr.lookupTransform(sc.header.frame_id,
                                       ta.header.frame_id,
@@ -52,10 +56,7 @@ def taxel_array_cb(ta, callback_args):
     t1 = np.matrix(t1).reshape(3,1)
     r1 = tr.quaternion_to_matrix(q1)
 
-    if ta.link_names == []:
-        real_skin_patch = True
-    else:
-        real_skin_patch = False
+    real_skin_patch = not hasattr(ta, 'link_names')
 
     # transform to the torso_lift_link frame.
     pts = r1 * np.matrix(pts).T + t1
@@ -63,12 +64,13 @@ def taxel_array_cb(ta, callback_args):
     fs = r1 * np.matrix(fs).T
     fmags = ut.norm(fs).A1
 
-    # for fabric sensor and meka sensor, Advait moved the thresholding
-    # etc within the calibration node. (June 13, 2012)
-    if not real_skin_patch:
-        idxs = np.where(fmags > 0.5)[0]
+    if real_skin_patch:
+        # HACK. need to calibrate the skin patch so that something
+        # reasonable gets outputted.
+        idxs = np.where(fmags > 1.)[0]
+
     else:
-        idxs = np.where(fmags > 0.001)[0]
+        idxs = np.where(fmags > 0.5)[0]
 
     for i in idxs:
         p = pts[:,i]
@@ -76,7 +78,12 @@ def taxel_array_cb(ta, callback_args):
         n2 = fs[:,i]
 
         if real_skin_patch:
+            #link_name = 'cody_forearm'
             link_name = ta.header.frame_id
+
+            if np.linalg.norm(n2) > meka_taxel_saturate_threshold:
+                rospy.logwarn('Looks like a taxel got saturated.')
+                n2 = n1 * saturated_taxel_force_value
         else:
             link_name = ta.link_names[i]
         

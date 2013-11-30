@@ -3,10 +3,6 @@ Background\ ColorG=0
 Background\ ColorB=0
 Fixed\ Frame=/torso_lift_link
 Target\ Frame=/torso_lift_link
-Meka\ Senor\ Forces.Enabled=1
-Meka\ Senor\ Forces.Marker\ Array\ Topic=/skin_patch_forearm_right/viz/taxel_array_array
-Meka\ Sensor\ Text.Enabled=1
-Meka\ Sensor\ Text.Marker\ Array\ Topic=/skin_patch_forearm_right/viz/taxel_array_text_array
 Robot\ Model.Alpha=1
 Robot\ Model.Collision\ Enabled=0
 Robot\ Model.Enabled=1
@@ -48,20 +44,26 @@ Robot\:\ Robot\ Model\ Link\ wrist_LEFTShow\ Axes=0
 Robot\:\ Robot\ Model\ Link\ wrist_LEFTShow\ Trail=0
 Robot\:\ Robot\ Model\ Link\ wrist_RIGHTShow\ Axes=0
 Robot\:\ Robot\ Model\ Link\ wrist_RIGHTShow\ Trail=0
+Skin\ Force\ Text.=1
+Skin\ Force\ Text.Enabled=1
+Skin\ Force\ Text.Marker\ Array\ Topic=/skin/viz/taxel_array_text_array
+Skin\ Forces.=1
+Skin\ Forces.Enabled=1
+Skin\ Forces.Marker\ Array\ Topic=/skin/viz/taxel_array_array
 Tool\ 2D\ Nav\ GoalTopic=goal
 Tool\ 2D\ Pose\ EstimateTopic=initialpose
 Camera\ Type=rviz::OrbitViewController
-Camera\ Config=1.386 5.54821 1.09035 0.3218 -0.365494 -0.36052
-Property\ Grid\ State=selection=;expanded=.Global Options,Meka Senor Forces.Enabled.Meka Senor Forces.Namespaces,Meka Sensor Text.Enabled.Meka Sensor Text.Namespaces;scrollpos=0,0;splitterpos=164,329;ispageselected=1
+Camera\ Config=1.296 5.22007 1.71998 0.112568 -0.426609 -0.161855
+Property\ Grid\ State=selection=;expanded=.Global Options,Skin Forces.Enabled.Skin Forces.Namespaces,Skin Force Text.Enabled.Skin Force Text.Namespaces;scrollpos=0,0;splitterpos=133,266;ispageselected=1
 [Display0]
 Name=Robot Model
 Package=rviz
 ClassName=rviz::RobotModelDisplay
 [Display1]
-Name=Meka Senor Forces
+Name=Skin Forces
 Package=rviz
 ClassName=rviz::MarkerArrayDisplay
 [Display2]
-Name=Meka Sensor Text
+Name=Skin Force Text
 Package=rviz
 ClassName=rviz::MarkerArrayDisplay

@@ -1,0 +1,23 @@
+Average velocity with dynamic model: 0.0180275426809
+Average velocity with quasi-static model: 0.0155027639783
+p-value for paired test is : 5.01578290324e-05
+average diff is : 2.36258333307
+average time for qs : 20.6330431026
+average time for dyn : 18.2704597695
+OTHER WAY TO DO:
+dyn : 0.0308317317559 0.00652972743128
+qs : 0.0250410915168 0.00483396427704
+ttest between dyn and qs (13.123192294731181, 3.2097955604393432e-35)
+#################################################################
+#################################################################
+#################################################################
+Average velocity for successful trials only 50 50 : 
+ qs : 0.0240471008706 
+ dyn : 0.0289238688349
+dyn_50 :
+[28.333333333333332]
+qs_50 :
+[28.333333333333332]
+p-values :
+z is :	 0.0
+[1.0]

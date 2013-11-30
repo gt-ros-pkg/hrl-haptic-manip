@@ -19,7 +19,7 @@ def plot_taxel_locations(ta):
 
 def plot_taxel_array(ta):
     pts = np.matrix(np.row_stack([ta.centers_x, ta.centers_y, ta.centers_z]))
-    forces = np.matrix(np.row_stack([ta.values_x, ta.values_y, ta.values_z]))
+    forces = np.matrix(np.row_stack([ta.forces_x, ta.forces_y, ta.forces_z]))
     mu.plot_quiver(pts, forces)
     mu.plot_points(pts[:,::24], (0., 0., 1.), 0.002, mode='sphere')
     
@@ -27,7 +27,7 @@ def plot_taxel_array(ta):
 # skin PCB box. (Tapo verified this and Advait is putting in the
 # comment and setting the default parameter to 0)
 def taxel_array_to_np_arrays(ta, desired_unroll_index=0):
-    force_vectors = np.row_stack([ta.values_x, ta.values_y, ta.values_z])
+    force_vectors = np.row_stack([ta.forces_x, ta.forces_y, ta.forces_z])
     fmags = ut.norm(force_vectors)
     force_arr_raw = fmags.reshape((16,24)) #Verified by Tapo
 
@@ -96,15 +96,15 @@ if __name__ == '__main__':
     if False:
         # test to ensure that unrolling taxels into an image still
         # preverves adjacency.
-        ta.values_x = list(ta.values_x)
-        ta.values_x[0] = 1.
-        ta.values_x[1] = 1.
-        ta.values_x[23] = 1.
+        ta.forces_x = list(ta.forces_x)
+        ta.forces_x[0] = 1.
+        ta.forces_x[1] = 1.
+        ta.forces_x[23] = 1.
 
-        ta.values_y = list(ta.values_y)
-        ta.values_y[0] = 1.
-        ta.values_y[1] = 1.
-        ta.values_y[23] = 1.
+        ta.forces_y = list(ta.forces_y)
+        ta.forces_y[0] = 1.
+        ta.forces_y[1] = 1.
+        ta.forces_y[23] = 1.
 
     if False:
         # sanity check that taxel centers are along a cylinder.

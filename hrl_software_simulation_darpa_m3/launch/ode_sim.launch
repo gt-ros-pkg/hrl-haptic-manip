@@ -67,7 +67,7 @@
     <!-- This is where robot linkage and initial configuration is defined -->
     <group unless="$(arg with_hand)">
         <node pkg="hrl_software_simulation_darpa_m3" type="sim_arm_param_upload.py" output="log"
-            args="--planar_three_link_capsule" name="robot_params" >
+              args="--planar_three_link_capsule" name="robot_params" >
         </node>
     </group>
 

@@ -1,0 +1,27 @@
+
+- git:
+    local-name: hrl_haptic_manipulation_in_clutter
+    uri: 'mycroft@skynet.hsi.gatech.edu:/home/mycroft/internal_git_bare/hrl_haptic_manipulation_in_clutter'
+    version: 'b310110c40d35311b1b6a3717608fe95d75242c1'
+
+- git:
+    local-name: gt-ros-pkg.hrl
+    uri: 'https://code.google.com/p/gt-ros-pkg.hrl'
+    version: '17c2ad5f7cade32249e49b924baffa5a0832803a'
+
+- svn:
+    local-name: m3skin_ros
+    uri: 'https://mekabot-dev.com/svn/m3skin/trunk/ros/m3skin_ros'
+    version: '-r87'
+
+- svn:
+    local-name: m3_msgs
+    uri: 'https://mekabot-dev.com/svn/m3/trunk/ros/m3_msgs'
+    version: '-r1714'
+
+- other:
+    local-name: /opt/ros/electric/ros
+
+- other:
+    local-name: /opt/ros/electric/stacks
+

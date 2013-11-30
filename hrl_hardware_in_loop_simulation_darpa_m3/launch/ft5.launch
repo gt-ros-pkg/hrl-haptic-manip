@@ -1,0 +1,11 @@
+<launch>
+    <node pkg="netft_rdt_driver" name="ft5" type="netft_node" args="192.168.0.121" respawn="true">
+        <remap from='netft_data' to='/force_torque_ft5' />
+    </node>
+
+    <node name="static_tf_ft5_broadcaster" pkg="tf"
+        type="static_transform_publisher"
+        args="0 0 0 0 0 0 1 world force_torque_ft5 50"
+        respawn="false" output="screen"/>
+</launch>
+

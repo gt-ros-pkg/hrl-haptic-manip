@@ -1,8 +1,5 @@
 
 <launch>
-    <!-- simulate proximity sensor -->
-    <arg name="use_prox_sensor" default="0" />
-
     <!-- simulate taxels -->
     <arg name="use_taxels" default="1" />
 
@@ -11,7 +8,6 @@
 
     <!-- randomly generate obstacles -->
     <arg name="random" default="0" />
-    <arg name="map" default="0" />
 
     <!-- radius of the obstacles -->
     <arg name="radius" default="0.01" />
@@ -22,28 +18,13 @@
     <arg name="n_compliant" default="0" />    
     <arg name="stiffness_value" default="0" />    
 
-    <group unless="$(arg map)" >
-      <!-- If we want to use a predefined map structure, this will be preloaded on the param server.-->
-      <rosparam command="delete" param="m3" />
-    </group>
+    <rosparam command="delete" param="m3" />
     <rosparam command="delete" param="roslaunch" />
 
     <rosparam> 
         use_sim_time: true
         m3/software_testbed/resolution: 100
     </rosparam>
-
-    <group if="$(arg use_prox_sensor)">
-      <rosparam>
-        use_prox_sensor: true
-      </rosparam>
-    </group>
-    <group unless="$(arg use_prox_sensor)">
-      <rosparam>
-        use_prox_sensor: false
-      </rosparam>
-    </group>
-
 
     <!-- use skin taxels here -->
     <group if="$(arg use_taxels)">
@@ -65,11 +46,9 @@
     </group>
 
     <!-- This is where robot linkage and initial configuration is defined -->
-    <!-- multi_link_X_planar -->
-    <!-- planar_three_link_capsule -->
     <node pkg="hrl_software_simulation_darpa_m3" type="sim_arm_param_upload.py" output="log" 
 	  args="--planar_three_link_capsule" name="robot_params" >
-    </node>
+    </node> 
 
     <!-- xmin 0.2 xmax 0.6 ymin -0.5 ymax 0.2 -->	
     <!-- xmin 0.2 xmax 0.9 ymin -0.6 ymax 0.6 -->
@@ -77,10 +56,6 @@
         <node pkg="hrl_common_code_darpa_m3" type="obstacles.py" output="log"
             name="obstacles" args="--fixed=$(arg n_fixed) --sliding=$(arg n_sliding) --xmin=0.2 --xmax=0.6 --ymin=-0.5 --ymax=0.2 --radius=$(arg radius) --compliant=$(arg n_compliant) --stiffness_value=$(arg stiffness_value)" />
     </group>
-
-    <!--<group if="$(arg map)">
-        <rosparam command="load" file="$(find hrl_traversability_planner)/maps/ode/map1.yaml" />
-    </group> -->
 
     <!-- visualization nodes -->
     <node pkg="hrl_software_simulation_darpa_m3"

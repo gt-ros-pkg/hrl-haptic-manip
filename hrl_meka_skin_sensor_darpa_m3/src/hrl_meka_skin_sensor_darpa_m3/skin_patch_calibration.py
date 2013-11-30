@@ -15,7 +15,6 @@ from m3skin_ros.msg import RawTaxelArray
 from m3skin_ros.srv import None_TransformArray
 from m3skin_ros.srv import None_String
 
-from std_msgs.msg import Empty
 
 class RawDataClient():
     def __init__(self, raw_data_topic):
@@ -42,8 +41,8 @@ class RawDataClient():
 
 
 class SkinCalibration():
-    def __init__(self):
-        self.ta_pub = rospy.Publisher('taxels/forces', TaxelArray)
+    def __init__(self, nm):
+        self.ta_pub = rospy.Publisher(nm+'/taxels/forces', TaxelArray)
 
         self.pos_arr = None # Nx3
         self.nrml_arr = None # Nx3
@@ -51,10 +50,8 @@ class SkinCalibration():
         self.bias_mn = None
         self.bias_std = None
 
-        self.disable_sensor = False
-
-        srv_nm1 = 'taxels/srv/local_coord_frames'
-        srv_nm2 = 'taxels/srv/link_name'
+        srv_nm1 = nm+'/taxels/srv/local_coord_frames'
+        srv_nm2 = nm+'/taxels/srv/link_name'
 
         rospy.loginfo('Waiting for services ...')
         rospy.wait_for_service(srv_nm1)
@@ -65,9 +62,6 @@ class SkinCalibration():
                                                          None_TransformArray)
         self.link_name_srv = rospy.ServiceProxy(srv_nm2, None_String)
         self.link_name = self.link_name_srv().data
-
-        rospy.Subscriber('disable_sensor', Empty, self.disable_sensor_cb)
-        rospy.Subscriber('enable_sensor', Empty, self.enable_sensor_cb)
 
     def precompute_taxel_location_and_normal(self):
         resp = self.local_coord_frames_srv()
@@ -96,15 +90,11 @@ class SkinCalibration():
         ta.normals_y = self.nrml_arr[:,1]
         ta.normals_z = self.nrml_arr[:,2]
 
-        min_idx = np.argmin(raw_data)
         calib_data = self.raw_data_to_force(raw_data)
 
-        if self.disable_sensor:
-            calib_data[:] = 0.
-
-        ta.values_x = ta.normals_x * calib_data
-        ta.values_y = ta.normals_y * calib_data
-        ta.values_z = ta.normals_z * calib_data
+        ta.forces_x = ta.normals_x * calib_data
+        ta.forces_y = ta.normals_y * calib_data
+        ta.forces_z = ta.normals_z * calib_data
 
         self.ta_pub.publish(ta)
 
@@ -133,44 +123,27 @@ class SkinCalibration():
         self.bias_std = std
         rospy.loginfo('...done')
 
-    def disable_sensor_cb(self, msg):
-        self.disable_sensor = True
-
-    def enable_sensor_cb(self, msg):
-        self.disable_sensor = False
-
 
 class SkinCalibration_Naive(SkinCalibration):
     def __init__(self):
-        SkinCalibration.__init__(self)
+        SkinCalibration.__init__(self, '/skin_patch_forearm_right')
 
     def raw_data_to_force(self, raw_data):
-        meka_taxel_saturate_threshold = 17.
-        saturated_taxel_force_value = 80.
-
         d_biased = self.subtract_bias(raw_data, 6)
         calib_data = d_biased / 1000. # calibration!
-        idxs = np.where(calib_data < 1.0)[0]
+        idxs = np.where(calib_data < 0.8)[0]
         calib_data[idxs] = 0.
-        idxs = np.where(calib_data > meka_taxel_saturate_threshold)[0]
-        calib_data[idxs] = saturated_taxel_force_value
         return calib_data
-
-def zero_sensor_cb(msg):
-    scn.compute_bias(rdc, 10)
 
 
 if __name__ == '__main__':
     rospy.init_node('forearm_raw_data_subscriber')
-
-    zero_sensor_subscriber = rospy.Subscriber('zero_sensor', Empty, zero_sensor_cb)
-
+    
     scn = SkinCalibration_Naive()
     scn.precompute_taxel_location_and_normal()
 
-    rdc = RawDataClient('taxels/raw_data')
+    rdc = RawDataClient('/skin_patch_forearm_right/taxels/raw_data')
     scn.compute_bias(rdc, 1000)
-
 
     while not rospy.is_shutdown():
         d = rdc.get_raw_data(True)

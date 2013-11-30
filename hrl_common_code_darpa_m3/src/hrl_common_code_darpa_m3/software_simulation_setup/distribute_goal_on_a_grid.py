@@ -10,9 +10,6 @@ import hrl_lib.util as ut
 import hrl_lib.matplotlib_util as mpu
 import hrl_common_code_darpa_m3.software_simulation_setup.viz as sssv
 
-
-
-
 if __name__ == '__main__':
     import optparse
     p = optparse.OptionParser()
@@ -41,7 +38,9 @@ if __name__ == '__main__':
                  help='three link planar (torso, upper arm, forearm)')
     p.add_option('--sim3_with_hand', action='store_true', dest='sim3_with_hand',
                  help='three link planar (upper arm, forearm, hand)')
-
+    p.add_option('--three_link_planar_cody', action='store_true', dest='tl_p_cody',
+                 help='three link planar cody (upper arm, forearm, hand)')
+    
     p.add_option('--grid_goal', action='store', dest='grid_resol', type='float',
                  default=0.0, help='Grid Goal resolution for equaly distributed goals')
     p.add_option('--xmin', action='store', dest='xmin',type='float',
@@ -52,7 +51,7 @@ if __name__ == '__main__':
                  default=-0.3, help='min y coord for goals')
     p.add_option('--ymax', action='store', dest='ymax',type='float',
                  default=0.3, help='max y coord for goals')
-
+    
     opt, args = p.parse_args()
 
     if opt.pkl == None:
@@ -82,6 +81,8 @@ if __name__ == '__main__':
                 rpd['goal'] = [arGridX[i], arGridY[j], 0]
                 ut.save_pickle(rpd, nm + '_x%02d'%i + '_y%02d'%j + '.pkl')
                 g_list.append(copy.copy(rpd['goal']))
+
+
 
     else:
         # Prevent divided by zero
@@ -123,14 +124,16 @@ if __name__ == '__main__':
             import hrl_common_code_darpa_m3.robot_config.three_link_planar_capsule as d_robot
         elif opt.sim3_with_hand:
             import hrl_common_code_darpa_m3.robot_config.three_link_with_hand as d_robot
+        elif opt.tl_p_cody:
+            import hrl_common_code_darpa_m3.robot_config.three_link_planar_cody as d_robot
 
         mpu.set_figure_size(6,4)
         pp.figure()
         kinematics = gsa.RobotSimulatorKDL(d_robot)
+
         sssv.draw_obstacles_from_reach_problem_dict(rpd)
         g_arr = np.array(g_list)
         pp.scatter(-g_arr[:,1], g_arr[:,0], s=50, c='g', marker='x', lw=1, edgecolor='g')
-
         q = [0.,0,0]
         ee,_ = kinematics.FK(q)
         rad = np.linalg.norm(ee)
@@ -142,6 +145,4 @@ if __name__ == '__main__':
         pp.xlim(-0.7, 0.7)
         mpu.reduce_figure_margins(left=0.02, bottom=0.02, right=0.98, top=0.98)
         pp.savefig(nm+'.pdf')
-
-
 

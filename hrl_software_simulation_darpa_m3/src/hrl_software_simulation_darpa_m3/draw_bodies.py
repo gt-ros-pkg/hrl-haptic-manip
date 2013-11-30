@@ -14,8 +14,6 @@ from hrl_lib.transforms import *
 import hrl_lib.viz as hv
 import threading
 
-from visualization_msgs.msg import Marker
-
 
 class DrawAll:
     def __init__(self):
@@ -24,6 +22,9 @@ class DrawAll:
 
         # this needs to be the first param that is read for
         # synchronization with obstacles.py
+        # If there is no obstacle, it is infinite loop - dpark
+        # NOTE!! need to comment out       
+        
         while not rospy.is_shutdown():
             try:
                 self.moveable_dimen = rospy.get_param('m3/software_testbed/movable_dimen')
@@ -31,17 +32,13 @@ class DrawAll:
             except KeyError:
                 rospy.sleep(0.1)
                 continue
-            
+
         self.fixed_dimen = rospy.get_param('m3/software_testbed/fixed_dimen')
         self.compliant_dimen = rospy.get_param('m3/software_testbed/compliant_dimen')
         self.num_fixed = rospy.get_param('m3/software_testbed/num_fixed')
         self.num_moveable = rospy.get_param('m3/software_testbed/num_movable')
         self.num_compliant = rospy.get_param('m3/software_testbed/num_compliant')
         self.num_tot = rospy.get_param('m3/software_testbed/num_total')
-
-        self.fixed_ctype = rospy.get_param('m3/software_testbed/fixed_ctype')
-        self.movable_ctype = rospy.get_param('m3/software_testbed/movable_ctype')
-        
         self.goal = np.matrix(rospy.get_param('m3/software_testbed/goal')).T
 
         try:
@@ -77,9 +74,6 @@ class DrawAll:
         self.color_passive = [0, 0, 1, 1]
         self.color_links =rospy.get_param('m3/software_testbed/linkage/colors')
         rospy.Subscriber("/sim_arm/bodies_visualization", BodyDraw, self.bodies_callback)
-
-        self.goal_marker_pub = rospy.Publisher('/epc_skin/viz/goal', Marker)
-
         
     def bodies_callback(self, msg):
         with self.lock:
@@ -115,13 +109,12 @@ class DrawAll:
                 self.draw_links.pub_body(jt_pos_neg, matrix_to_quaternion(link_rot_mat), dim_jt, color_links[i], link_counter+1, self.draw_links.Marker.SPHERE)
                 link_counter=link_counter+2
 
-            self.draw_links.pub_body(self.links_pos[i].data, matrix_to_quaternion(self.draw_links.get_rot_mat(self.links_rot[i].data).T),
-                               dims, color_links[i], link_counter, shape)
+            self.draw_links.pub_body(self.links_pos[i].data, matrix_to_quaternion(self.draw_links.get_rot_mat(self.links_rot[i].data).T), dims, color_links[i], link_counter, shape)
             link_counter = link_counter + 1
 
         if self.obst_pos != []:
             for i in xrange(self.num_moveable):
-                color = [0.6,0.6,0,0.7]
+                color = [0.6,0.6,0,1.0]
                 self.draw_obstacles.pub_body(self.obst_pos[i].data, 
                                    matrix_to_quaternion(self.draw_obstacles.get_rot_mat(self.obst_rot[i].data).T),
                                    [self.moveable_dimen[i][0]*2, self.moveable_dimen[i][1]*2, self.moveable_dimen[i][2]], 
@@ -142,55 +135,26 @@ class DrawAll:
 
 
             for i in xrange(self.num_fixed):
-                color2 = [0.3, 0.,0.,0.7]
-                    
-                if self.fixed_ctype[i] == 'wall':
-                    
-                    obst_rot_mat = self.draw_links.get_rot_mat(self.obst_rot[i].data).T
-                    ## dim_jt       = [self.fixed_dimen[i][1]/2.0, self.fixed_dimen[i][1]/2.0, self.fixed_dimen[i][2]]
-
-                    ## #jt_pos_loc = link_rot_mat*np.array([0, 0, self.links_dim[i][2]/2.0]).reshape(3,1)
-                    ## #jt_pos_plus = np.array(self.links_pos[i].data).reshape(3,1) + jt_pos_loc
-                    ## #jt_pos_neg = np.array(self.links_pos[i].data).reshape(3,1) - jt_pos_loc                                    
-
-                    ## jt_pos_loc  = obst_rot_mat*np.array([0, 0, self.fixed_dimen[i][2]/2.0]).reshape(3,1)                    
-                    ## jt_pos_plus = self.obst_pos[self.num_moveable+self.num_compliant+i].data + jt_pos_loc
-                    ## jt_pos_neg  = self.obst_pos[self.num_moveable+self.num_compliant+i].data - jt_pos_loc                    
-
-                    ## self.draw_links.pub_body(jt_pos_plus, matrix_to_quaternion(obst_rot_mat), dim_jt, color_links[i], link_counter, self.draw_links.Marker.SPHERE)
-                    ## self.draw_links.pub_body(jt_pos_neg, matrix_to_quaternion(obst_rot_mat), dim_jt, color_links[i], link_counter+1, self.draw_links.Marker.SPHERE)
-                    ## link_counter=link_counter+2
-
-                    #print self.num_moveable+self.num_compliant+i
-                    #print self.obst_rot[self.num_moveable+self.num_compliant+i].data
-                    
-                    self.draw_obstacles.pub_body(self.obst_pos[self.num_moveable+self.num_compliant+i].data, 
-                                                 matrix_to_quaternion(self.draw_obstacles.get_rot_mat(self.obst_rot[self.num_moveable+self.num_compliant+i].data).T),
-                                                 [self.fixed_dimen[i][0], self.fixed_dimen[i][1], self.fixed_dimen[i][2]], 
-                                                 color2, 
-                                                 obst_counter, 
-                                                 self.draw_obstacles.Marker.CUBE)
-                else:                    
-                    self.draw_obstacles.pub_body(self.obst_pos[self.num_moveable+self.num_compliant+i].data, 
-                                                 matrix_to_quaternion(self.draw_obstacles.get_rot_mat(self.obst_rot[self.num_moveable+self.num_compliant+i].data).T),
-                                                 [self.fixed_dimen[i][0]*2, self.fixed_dimen[i][1]*2, self.fixed_dimen[i][2]], 
-                                                 color2, 
-                                                 obst_counter, 
-                                                 self.draw_obstacles.Marker.CYLINDER)
+                color2 = [0.3, 0.,0.,1.0]
+                self.draw_obstacles.pub_body(self.obst_pos[self.num_moveable+self.num_compliant+i].data, 
+                                   matrix_to_quaternion(self.draw_obstacles.get_rot_mat(self.obst_rot[self.num_moveable+self.num_compliant+i].data).T),
+                                   [self.fixed_dimen[i][0]*2, self.fixed_dimen[i][1]*2, self.fixed_dimen[i][2]], 
+                                   color2, 
+                                   obst_counter, 
+                                   self.draw_obstacles.Marker.CYLINDER)
                 obst_counter = obst_counter + 1
         #self.num_fixed = rospy.get_param('m3/software_testbed/num_fixed')
 
         self.lock.release()
 
-    def publish_goal_marker(self, goal_pos):
-        o = np.matrix([0.,0.,0.,1.]).T
-        g_m = hv.single_marker(goal_pos, o, 'sphere',
-                               '/world', color=(0., 1., 1., 1.),
-                               scale = (0.02, 0.02, 0.02),
-                               m_id = 23, duration=0)
-        g_m.header.stamp = rospy.Time.now()
-        self.goal_marker_pub.publish(g_m)    
-        #self.draw.pub.publish(g_m)
+#    def publish_goal_marker(self, goal_pos):
+#        o = np.matrix([0.,0.,0.,1.]).T
+#        g_m = hv.single_marker(goal_pos, o, 'sphere',
+#                        '/world', color=(0., 1., 1., 1.),
+#                            scale = (0.02, 0.02, 0.02),
+#                            m_id = 23, duration=0)
+#        g_m.header.stamp = rospy.Time.now()
+#        self.draw.pub.publish(g_m)
 
 
 
@@ -199,7 +163,7 @@ if __name__ == '__main__':
     rospy.loginfo('Started visualizing bodies!')
     while not rospy.is_shutdown():
         draw_stuff.draw_bodies()
-        draw_stuff.publish_goal_marker(draw_stuff.goal)
+#        draw_stuff.publish_goal_marker(draw_stuff.goal)
         rospy.sleep(0.1)
 
                         

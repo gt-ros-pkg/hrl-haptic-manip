@@ -1,7 +1,7 @@
 
 <launch>
     <!-- simulate taxels -->
-    <arg name="use_taxels" default="1" />
+    <arg name="use_taxels" default="0" />
 
     <!-- have a mobile base in software simulation -->
     <arg name="mobile_base" default="0" />
@@ -47,7 +47,7 @@
 
     <!-- This is where robot linkage and initial configuration is defined -->
     <node pkg="hrl_software_simulation_darpa_m3" type="sim_arm_param_upload.py" output="log" 
-	  args="--multi_link_eight_planar" name="robot_params" >
+	  args="--planar_three_link_capsule" name="robot_params" >
     </node>
 
     <!-- xmin 0.2 xmax 0.6 ymin -0.5 ymax 0.2 -->	

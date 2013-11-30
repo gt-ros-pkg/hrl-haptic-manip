@@ -25,6 +25,11 @@ class ODESimArm(HRLArm):
         rospy.loginfo("Loading ODESimArm")
         kinematics = RobotSimulatorKDL(d_robot) # KDL chain.
         HRLArm.__init__(self, kinematics)
+        # at some point of time, Advait might move these to hrl_arm.py
+        # and make things consistent with Cody. For now (Feb 7, 2012)
+        # sticking to this file.
+        self.kp = None
+        self.kd = None
 
         self.jep_pub = rospy.Publisher('/sim_arm/command/jep', FloatArrayBare)
         self.cep_marker_pub = rospy.Publisher('/sim_arm/viz/cep', Marker)
@@ -39,8 +44,6 @@ class ODESimArm(HRLArm):
         rospy.Subscriber('/sim_arm/jep', FloatArrayBare, self.jep_cb)
         rospy.Subscriber('/sim_arm/joint_impedance', MechanicalImpedanceParams,
                          self.impedance_params_cb)
-        rospy.Subscriber ("/delta_jep_mpc_cvxgen", FloatArrayBare, self.set_delta_ep_ros)
-
 
         rospy.sleep(1.)
         rospy.loginfo("Finished loading SimpleArmManger")
@@ -72,22 +75,12 @@ class ODESimArm(HRLArm):
         self.jep_pub.publish(f)
         self.publish_rviz_markers()
 
-    def set_delta_ep_ros(self, msg):
-        delta_jep = copy.copy(msg.data)
-        if delta_jep is None or len(delta_jep) != 3:
-            raise RuntimeError("set_jep value is " + str(delta_jep))
-        
-        with self.lock:
-          if self.ep == None:
-            self.ep = self.get_joint_angles()
-            
-          jep = (np.array(self.ep) + np.array(delta_jep)).tolist()
-          
-          f = FloatArrayBare(jep)
-          self.jep_pub.publish(f)
-
     def publish_rviz_markers(self):
         # publish the CEP marker.
+        total_time = 0
+        while self.ep == None and total_time<1.5:
+            rospy.sleep(0.1)
+            total_time += 0.1
         jep = self.get_ep()
         cep, r = self.kinematics.FK(jep)
         o = np.matrix([0.,0.,0.,1.]).T
@@ -97,6 +90,12 @@ class ODESimArm(HRLArm):
 
         cep_marker.header.stamp = rospy.Time.now()
         self.cep_marker_pub.publish(cep_marker)
+
+    # returns kp, kd
+    # np arrays of stiffness and damping of the virtual springs.
+    def get_joint_impedance(self):
+        with self.lock:
+            return np.array(self.kp), np.array(self.kd)
 
     # kp, kd - list or np array of stiffness and damping.
     def set_joint_impedance(self, kp, kd):
@@ -110,10 +109,16 @@ class ODESimArm(HRLArm):
 # KDL for kinematics etc.
 class RobotSimulatorKDL(HRLArmKinematics):
     def __init__(self, d_robot):
-        HRLArmKinematics.__init__(self, len(d_robot.b_jt_anchor))
-        self.arm_type = "simulated"
+
+        HRLArmKinematics.__init__(self, len(d_robot.b_jt_start))
         self.d_robot = d_robot
-        self.right_chain = self.create_right_chain()
+
+        # create robot kinematics frame by DH-convension
+        if hasattr(d_robot, 'dh_param'):
+            self.right_chain = self.create_right_chain_by_dh()
+        else:
+            self.right_chain = self.create_right_chain()
+
         fk, ik_v, ik_p, jac = self.create_solvers(self.right_chain)
 
         self.right_fk = fk
@@ -143,12 +148,12 @@ class RobotSimulatorKDL(HRLArmKinematics):
         n = len(self.d_robot.b_jt_anchor)
 
         for i in xrange(n-1):
-            if b_jt_axis[i][0] == 1 and b_jt_axis[i][1] == 0 and b_jt_axis[i][2] == 0:
-                kdl_jt = kdl.Joint(kdl.Joint.RotX)
-            elif b_jt_axis[i][0] == 0 and b_jt_axis[i][1] == 1 and b_jt_axis[i][2] == 0:
-                kdl_jt = kdl.Joint(kdl.Joint.RotY)
-            elif b_jt_axis[i][0] == 0 and b_jt_axis[i][1] == 0 and b_jt_axis[i][2] == 1:
-                kdl_jt = kdl.Joint(kdl.Joint.RotZ)
+            if abs(b_jt_axis[i][0]) == 1 and abs(b_jt_axis[i][1]) == 0 and abs(b_jt_axis[i][2]) == 0:
+                kdl_jt = kdl.Joint(kdl.Joint.RotX, b_jt_axis[i][0])
+            elif abs(b_jt_axis[i][0]) == 0 and abs(b_jt_axis[i][1]) == 1 and abs(b_jt_axis[i][2]) == 0:
+                kdl_jt = kdl.Joint(kdl.Joint.RotY, b_jt_axis[i][1])
+            elif abs(b_jt_axis[i][0]) == 0 and abs(b_jt_axis[i][1]) == 0 and abs(b_jt_axis[i][2]) == 1:
+                kdl_jt = kdl.Joint(kdl.Joint.RotZ, b_jt_axis[i][2])
             else:
                 print "can't do off-axis joints yet!!!"
 
@@ -161,18 +166,49 @@ class RobotSimulatorKDL(HRLArmKinematics):
         np_vec = np.copy(ee_location.A1)
         diff_vec = np_vec-prev_vec
 
-        if b_jt_axis[n-1][0] == 1 and b_jt_axis[n-1][1] == 0 and b_jt_axis[n-1][2] == 0:
-            kdl_jt = kdl.Joint(kdl.Joint.RotX)
-        elif b_jt_axis[n-1][0] == 0 and b_jt_axis[n-1][1] == 1 and b_jt_axis[n-1][2] == 0:
-            kdl_jt = kdl.Joint(kdl.Joint.RotY)
-        elif b_jt_axis[n-1][0] == 0 and b_jt_axis[n-1][1] == 0 and b_jt_axis[n-1][2] == 1:
-            kdl_jt = kdl.Joint(kdl.Joint.RotZ)
+        if abs(b_jt_axis[n-1][0]) == 1 and abs(b_jt_axis[n-1][1]) == 0 and abs(b_jt_axis[n-1][2]) == 0:
+            kdl_jt = kdl.Joint(kdl.Joint.RotX, b_jt_axis[n-1][0])
+        elif abs(b_jt_axis[n-1][0]) == 0 and abs(b_jt_axis[n-1][1]) == 1 and abs(b_jt_axis[n-1][2]) == 0:
+            kdl_jt = kdl.Joint(kdl.Joint.RotY, b_jt_axis[n-1][1])
+        elif abs(b_jt_axis[n-1][0]) == 0 and abs(b_jt_axis[n-1][1]) == 0 and abs(b_jt_axis[n-1][2]) == 1:
+            kdl_jt = kdl.Joint(kdl.Joint.RotZ, b_jt_axis[n-1][2])
         else:
             print "can't do off-axis joints yet!!!"
 
         kdl_vec = kdl.Vector(diff_vec[0], diff_vec[1], diff_vec[2])            
         ch.addSegment(kdl.Segment(kdl_jt, kdl.Frame(kdl_vec)))
         
+        return ch
+
+    def create_right_chain_by_dh(self):
+
+        height = 0.0
+        linkage_offset_from_ground = np.matrix([0., 0., height]).T
+        self.linkage_offset_from_ground = linkage_offset_from_ground
+        self.n_jts = len(self.d_robot.b_jt_start)
+        rospy.loginfo("number of joints is :"+str(self.n_jts))
+
+        ch     = kdl.Chain()
+
+        # DH convention always use z-axis rotation
+        kdl_no_jt = kdl.Joint(kdl.Joint.None)
+        kdl_jt    = kdl.Joint(kdl.Joint.RotZ)
+
+        kdl_frm   = kdl.Frame()
+        
+        # add base
+        dh       = self.d_robot.dh_base 
+        ch.addSegment(kdl.Segment(kdl_no_jt, kdl_frm.DH_Craig1989(dh[0][0],dh[0][1],dh[0][2],dh[0][3])))
+        
+        # add robot link
+        dh = self.d_robot.dh_robot 
+        for i in xrange(self.n_jts):
+            ch.addSegment(kdl.Segment(kdl_jt, kdl_frm.DH_Craig1989(dh[i][0],dh[i][1],dh[i][2],dh[i][3])))
+
+        # add tip
+        dh = self.d_robot.dh_tip         
+        ch.addSegment(kdl.Segment(kdl_no_jt, kdl_frm.DH_Craig1989(dh[0][0],dh[0][1],dh[0][2],dh[0][3])))
+
         return ch
 
     def create_solvers(self, ch):
@@ -229,7 +265,7 @@ class RobotSimulatorKDL(HRLArmKinematics):
 
     ## compute Jacobian at point pos. 
     # p is in the ground coord frame.
-    def jacobian(self, q, pos=None):
+    def Jacobian(self, q, pos=None):
         if pos == None:
             pos = self.FK(q)[0]
 

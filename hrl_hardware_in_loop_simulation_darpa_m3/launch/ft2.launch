@@ -1,0 +1,10 @@
+<launch>
+    <node pkg="force_torque" name="ft2" type="force_torque_relay" args="--name=ft2" respawn="true"/>
+    <node pkg="force_torque" name="ft2_poller" type="force_torque_poller" args="--name=ft2 --path=/dev/robot/force_torque2" respawn="true"/>
+
+    <node name="static_tf_ft2_broadcaster" pkg="tf"
+        type="static_transform_publisher"
+        args="0 0 0 0 0 0.25881905 0.96592583 world force_torque_ft2 50"
+        respawn="false" output="screen"/>
+</launch>
+

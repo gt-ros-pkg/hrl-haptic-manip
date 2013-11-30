@@ -11,6 +11,11 @@ bod_com_position = [[0., -torso_half_width/2., height],
                     [0., -torso_half_width-upper_arm_length/2., height], 
                     [0., -torso_half_width-upper_arm_length-forearm_length/2.+dia/4, height]]
 
+bod_rotation   = [np.radians([-90.,0.,0.]).tolist(),
+                  np.radians([-90.,0.,0.]).tolist(),
+                  np.radians([-90.,0.,0.]).tolist()]
+
 bodies ={'shapes':bod_shapes, 'dim':bod_dimensions, 'num_links':bod_num_links,
-         'com_pos':bod_com_position, 'mass':bod_mass, 'name':bod_names, 'color':bod_color}
+         'com_pos':bod_com_position, 'mass':bod_mass, 'name':bod_names, 'color':bod_color,
+         'rotation':bod_rotation }
 

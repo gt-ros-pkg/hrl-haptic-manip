@@ -1,0 +1,19 @@
+
+<launch>
+    <arg name="type" default="1" />
+    <arg name="platform" default="sim" />
+
+    <include file="$(find sandbox_marc_darpa_m3)/launch/teleop_tf.launch" />  
+    <include file="$(find hrl_software_simulation_darpa_m3)/launch/ode_sim.launch" >  
+        <arg name="random" value="1" />
+	<arg name="n_sliding" value="50" />
+	<arg name="n_fixed" value="20" />
+	<arg name="stiffness" value="-1" />
+	<arg name="radius" value="0.01" />
+    </include>
+
+    <node pkg="sandbox_marc_darpa_m3" type="teleop_sim.py" output="screen" name="teleop_sim"
+	  respawn="true" args="--arms=r --$(arg platform) --ff=1"/>
+</launch>
+
+

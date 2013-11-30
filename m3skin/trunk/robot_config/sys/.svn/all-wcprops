@@ -1,0 +1,23 @@
+K 25
+svn:wc:ra_dav:version-url
+V 46
+/svn/m3skin/!svn/ver/24/trunk/robot_config/sys
+END
+m3_sys_test_hrl.yml
+K 25
+svn:wc:ra_dav:version-url
+V 66
+/svn/m3skin/!svn/ver/24/trunk/robot_config/sys/m3_sys_test_hrl.yml
+END
+m3_sys_test_hrl_arms.yml
+K 25
+svn:wc:ra_dav:version-url
+V 71
+/svn/m3skin/!svn/ver/24/trunk/robot_config/sys/m3_sys_test_hrl_arms.yml
+END
+m3monitor_m0.yml
+K 25
+svn:wc:ra_dav:version-url
+V 63
+/svn/m3skin/!svn/ver/24/trunk/robot_config/sys/m3monitor_m0.yml
+END

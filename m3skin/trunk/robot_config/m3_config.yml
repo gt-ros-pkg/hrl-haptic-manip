@@ -1,0 +1,51 @@
+########### M3 CONFIG ######################
+hostname: meka-merlan
+ec_components:
+  skin:
+    m3taxel_array_ec01: m3taxel_array_ec
+rt_components:
+  skin:
+    m3taxel_array_forearm: m3taxel_array
+  sys:
+    m3monitor_m0: m3monitor
+  pwr:
+    m3pwr_pwr003: m3pwr_virtual
+  ma1:
+    m3actuator_ma1_j0: m3actuator_virtual
+    m3actuator_ma1_j1: m3actuator_virtual
+    m3actuator_ma1_j2: m3actuator_virtual
+    m3actuator_ma1_j3: m3actuator_virtual
+    m3actuator_ma1_j4: m3actuator_virtual
+    m3actuator_ma1_j5: m3actuator_virtual
+    m3actuator_ma1_j6: m3actuator_virtual
+    m3joint_ma1_j0: m3joint
+    m3joint_ma1_j1: m3joint
+    m3joint_ma1_j2: m3joint
+    m3joint_ma1_j3: m3joint
+    m3joint_ma1_j4: m3joint
+    m3joint_ma1_j5: m3joint
+    m3joint_ma1_j6: m3joint
+    m3arm_ma1: m3arm
+    m3dynamatics_ma1: m3dynamatics
+    m3loadx6_ma1_l0: m3loadx6_virtual
+  ma2:
+    m3actuator_ma2_j0: m3actuator_virtual
+    m3actuator_ma2_j1: m3actuator_virtual
+    m3actuator_ma2_j2: m3actuator_virtual
+    m3actuator_ma2_j3: m3actuator_virtual
+    m3actuator_ma2_j4: m3actuator_virtual
+    m3actuator_ma2_j5: m3actuator_virtual
+    m3actuator_ma2_j6: m3actuator_virtual
+    m3joint_ma2_j0: m3joint
+    m3joint_ma2_j1: m3joint
+    m3joint_ma2_j2: m3joint
+    m3joint_ma2_j3: m3joint
+    m3joint_ma2_j4: m3joint
+    m3joint_ma2_j5: m3joint
+    m3joint_ma2_j6: m3joint
+    m3arm_ma2: m3arm
+    m3dynamatics_ma2: m3dynamatics
+    m3loadx6_ma2_l0: m3loadx6_virtual
+  mr1:
+    m3humanoid_bimanual_mr1: m3humanoid
+

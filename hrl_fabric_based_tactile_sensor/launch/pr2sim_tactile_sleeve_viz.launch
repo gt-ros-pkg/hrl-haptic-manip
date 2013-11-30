@@ -1,0 +1,37 @@
+
+<launch>
+
+    <node name="upperarm_taxels_viz" pkg="gazebo_m3skin_viz"
+        type="gazebo_m3skin_viz" output='screen' ns='l_upper_arm_roll_tactile_sensor'>
+    </node>
+
+    <node name="forearm_taxels_viz" pkg="gazebo_m3skin_viz"
+        type="gazebo_m3skin_viz" output='screen' ns='l_forearm_roll_link_geom_l_forearm_link_tactile_sensor'>
+    </node>
+
+    <node name="wrist_flex_taxels_viz" pkg="gazebo_m3skin_viz"
+        type="gazebo_m3skin_viz" output='screen' ns='l_wrist_flex_tactile_sensor'>
+    </node>
+
+    <node name="wrist_roll_taxels_viz" pkg="gazebo_m3skin_viz"
+        type="gazebo_m3skin_viz" output='screen' ns='l_wrist_roll_link_geom_l_gripper_palm_tactile_sensor'>
+    </node>
+
+    <node name="gripper_l_finger_link_taxels_viz" pkg="gazebo_m3skin_viz"
+        type="gazebo_m3skin_viz" output='screen' ns='l_gripper_l_finger_link_geom_tactile_sensor'>
+    </node>
+
+    <node name="gripper_l_finger_tip_taxels_viz" pkg="gazebo_m3skin_viz"
+        type="gazebo_m3skin_viz" output='screen' ns='l_gripper_l_finger_tip_contact_sensor'>
+    </node>
+
+    <node name="gripper_r_finger_link_taxels_viz" pkg="gazebo_m3skin_viz"
+        type="gazebo_m3skin_viz" output='screen' ns='l_gripper_r_finger_link_geom_tactile_sensor'>
+    </node>
+
+    <node name="gripper_r_finger_tip_taxels_viz" pkg="gazebo_m3skin_viz"
+        type="gazebo_m3skin_viz" output='screen' ns='l_gripper_r_finger_tip_contact_sensor'>
+    </node>
+
+</launch>
+

@@ -1,0 +1,15 @@
+num_slaves: 18
+include:
+- hrl_arms
+in_range:
+  m3pwr_pwr003:
+  - method: 'get_bus_voltage_V'
+    min: 22.0
+    max: 28.0
+    nsteps: 5
+  m3pwr_pwr003: 
+  - method: 'get_current_digital_mA'
+    min: 1200.0
+    max: 1800.0
+    nsteps: 5
+

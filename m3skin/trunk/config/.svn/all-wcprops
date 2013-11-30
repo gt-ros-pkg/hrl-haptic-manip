@@ -1,0 +1,47 @@
+K 25
+svn:wc:ra_dav:version-url
+V 35
+/svn/m3skin/!svn/ver/2/trunk/config
+END
+config.sub
+K 25
+svn:wc:ra_dav:version-url
+V 46
+/svn/m3skin/!svn/ver/2/trunk/config/config.sub
+END
+ltmain.sh
+K 25
+svn:wc:ra_dav:version-url
+V 45
+/svn/m3skin/!svn/ver/2/trunk/config/ltmain.sh
+END
+install-sh
+K 25
+svn:wc:ra_dav:version-url
+V 46
+/svn/m3skin/!svn/ver/2/trunk/config/install-sh
+END
+py-compile
+K 25
+svn:wc:ra_dav:version-url
+V 46
+/svn/m3skin/!svn/ver/2/trunk/config/py-compile
+END
+depcomp
+K 25
+svn:wc:ra_dav:version-url
+V 43
+/svn/m3skin/!svn/ver/2/trunk/config/depcomp
+END
+missing
+K 25
+svn:wc:ra_dav:version-url
+V 43
+/svn/m3skin/!svn/ver/2/trunk/config/missing
+END
+config.guess
+K 25
+svn:wc:ra_dav:version-url
+V 48
+/svn/m3skin/!svn/ver/2/trunk/config/config.guess
+END

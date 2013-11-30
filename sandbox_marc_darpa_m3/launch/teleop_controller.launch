@@ -1,0 +1,22 @@
+
+<launch>
+    <arg name="type" default="1" />
+    <arg name="platform" default="sim" />
+
+    <!-- run vmc controller -->
+    <group if="$(arg type)">
+        <node pkg="sandbox_marc_darpa_m3" type="multi_contact_controller_init.py"
+            output="screen" name="multi_contact_controller" args="--$(arg platform) --opt_vmc --teleop" />
+    </group>
+
+    <!-- run qp controller -->
+    <group unless="$(arg type)">
+        <node pkg="hrl_haptic_controllers_darpa_m3" type="contact_memory_dummy.py"
+            output="screen" name="contact_memory_dummy" />
+        <node pkg="sandbox_marc_darpa_m3" type="multi_contact_controller_init.py"
+            output="screen" name="multi_contact_controller" args="--$(arg platform) --opt_qp_jep --teleop" />
+    </group>
+
+</launch>
+
+

@@ -1,0 +1,29 @@
+K 25
+svn:wc:ra_dav:version-url
+V 40
+/svn/m3skin/!svn/ver/68/trunk/ros_config
+END
+mekabot.launch.uta
+K 25
+svn:wc:ra_dav:version-url
+V 59
+/svn/m3skin/!svn/ver/53/trunk/ros_config/mekabot.launch.uta
+END
+manifest.xml
+K 25
+svn:wc:ra_dav:version-url
+V 53
+/svn/m3skin/!svn/ver/53/trunk/ros_config/manifest.xml
+END
+mekabot.launch
+K 25
+svn:wc:ra_dav:version-url
+V 55
+/svn/m3skin/!svn/ver/53/trunk/ros_config/mekabot.launch
+END
+m3_launch.launch
+K 25
+svn:wc:ra_dav:version-url
+V 57
+/svn/m3skin/!svn/ver/68/trunk/ros_config/m3_launch.launch
+END

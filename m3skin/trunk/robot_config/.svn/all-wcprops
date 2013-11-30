@@ -1,0 +1,17 @@
+K 25
+svn:wc:ra_dav:version-url
+V 42
+/svn/m3skin/!svn/ver/75/trunk/robot_config
+END
+m3_config.yml
+K 25
+svn:wc:ra_dav:version-url
+V 56
+/svn/m3skin/!svn/ver/60/trunk/robot_config/m3_config.yml
+END
+m3_component_libs.yml
+K 25
+svn:wc:ra_dav:version-url
+V 64
+/svn/m3skin/!svn/ver/15/trunk/robot_config/m3_component_libs.yml
+END

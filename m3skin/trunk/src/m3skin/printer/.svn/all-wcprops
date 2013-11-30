@@ -1,0 +1,17 @@
+K 25
+svn:wc:ra_dav:version-url
+V 48
+/svn/m3skin/!svn/ver/46/trunk/src/m3skin/printer
+END
+m3skin_printer.c
+K 25
+svn:wc:ra_dav:version-url
+V 65
+/svn/m3skin/!svn/ver/46/trunk/src/m3skin/printer/m3skin_printer.c
+END
+Makefile.am
+K 25
+svn:wc:ra_dav:version-url
+V 60
+/svn/m3skin/!svn/ver/46/trunk/src/m3skin/printer/Makefile.am
+END

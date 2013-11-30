@@ -1,0 +1,11 @@
+<launch>
+
+  <arg name="tf_cfg" default="$(find hrl_proximity_to_skin_msg)/conf/tf.yaml" />
+	
+  <!-- Run tf node -->
+  <node name="proximity_to_skin_msg" pkg="hrl_proximity_to_skin_msg" type="proximity_sensing_to_skin" output="screen" >
+    <!-- Set proximity sensor patch position and orientation -->
+    <rosparam file="$(arg tf_cfg)" command="load" />
+  </node>
+  
+</launch>

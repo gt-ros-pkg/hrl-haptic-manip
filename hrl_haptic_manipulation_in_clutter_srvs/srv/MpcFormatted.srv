@@ -1,0 +1,8 @@
+hrl_haptic_manipulation_in_clutter_msgs/MpcDynFormattedData opt_data
+---
+float64 input_cost
+hrl_msgs/FloatArrayBare delta_jep
+hrl_msgs/FloatArrayBare total_input_change
+hrl_msgs/FloatArrayBare qd_eps
+hrl_msgs/FloatArrayBare f_eps
+hrl_msgs/FloatArrayBare final_q

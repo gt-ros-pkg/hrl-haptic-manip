@@ -1,0 +1,5 @@
+#!/bin/bash
+
+rosbag record /pr2_fabric_gripper_left_link_sensor/viz/taxel_array_array /pr2_fabric_gripper_left_link_sensor/viz/taxel_array_text_array /pr2_pps_sensor/viz/taxel_array_array /pr2_pps_sensor/viz/taxel_array_text_array /pr2_marker_control/feedback /pr2_marker_control/update /pr2_marker_control/update_full /joint_states /tf /pr2_fabric_gripper_palm_sensor/viz/taxel_array_array /pr2_fabric_gripper_palm_sensor/viz/taxel_array_text_array /epc_skin/viz/goal_array /epc_skin/viz/goal /pr2_fabric_gripper_right_link_sensor/viz/taxel_array_array /pr2_fabric_gripper_right_link_sensor/viz/taxel_array_text_array /pr2_fabric_forearm_sensor/viz/taxel_array_array /pr2_fabric_forearm_sensor/viz/taxel_array_text_array /pr2_fabric_upperarm_sensor/viz/taxel_array_array /pr2_fabric_upperarm_sensor/viz/taxel_array_text_array /teleop_rviz_server/update /teleop_rviz_server/feedback /teleop_rviz_server/update_full
+
+

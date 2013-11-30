@@ -1,0 +1,9 @@
+chid: 0
+ethercat:
+  pdo_version: taxel_array_pdo_v0
+  product_code: 1016
+  serial_number: 0
+firmware: m3_controller_skin_0
+name: m3taxel_array_ec01
+pwr_component: m3pwr_pwr010
+

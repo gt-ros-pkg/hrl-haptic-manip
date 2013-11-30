@@ -1,0 +1,40 @@
+
+<launch>
+    <arg name="use_optitrak" default="0" />
+
+    <group if="$(arg use_optitrak)">
+        <!-- motion tracking (optitrak) -->
+        <include file="$(find hrl_common_code_darpa_m3)/launch/optitrak.launch" />
+    </group>
+
+    <group unless="$(arg use_optitrak)">
+        <node name="world_static_tf_broadcaster" pkg="tf"
+            type="static_transform_publisher"
+            args="0 0 0 0 0 0 1 world torso_lift_link 50"
+            respawn="false" output="screen"/>
+        <node name="static_cody_torso_trackable_publisher"
+            pkg="hrl_common_code_darpa_m3"
+            type="static_cody_torso_trackable.py"
+            respawn="false" output="screen"/>
+    </group>
+
+    <!-- launch nodes for the fabric tactile sleeve -->
+    <include file='$(find hrl_fabric_based_tactile_sensor)/launch/cody_tactile_sleeve.launch'>
+    </include>
+
+    <!-- convert taxel array msg to SkinContact -->
+    <node pkg="hrl_common_code_darpa_m3" type="taxel_array_to_skin_contact.py"
+        output="screen" name="forearm_taxel_array_to_skin_contact">
+        <remap from='/skin/taxel_array_meka' to='/fabric_forearm_sensor/taxels/forces'/>
+        <remap from='/skin/contacts' to='/skin/contacts_forearm'/>
+    </node>
+
+    <node pkg="hrl_common_code_darpa_m3" type="taxel_array_to_skin_contact.py"
+        output="screen" name="wrist_taxel_array_to_skin_contact">
+        <remap from='/skin/taxel_array_meka' to='/fabric_wrist_sensor/taxels/forces'/>
+        <remap from='/skin/contacts' to='/skin/contacts_wrist'/>
+    </node>
+
+</launch>
+
+

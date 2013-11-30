@@ -1,0 +1,5 @@
+
+BUS=="usb", KERNEL=="ttyACM*", SYSFS{idVendor}=="2341", SYSFS{idProduct}=="0010", SYSFS{serial}=="93140364233351214262", SYMLINK+="robot/arduino1"
+BUS=="usb", KERNEL=="ttyACM*", SYSFS{idVendor}=="2341", SYSFS{idProduct}=="0042", SYSFS{serial}=="931403642333514171C2", SYMLINK+="robot/arduino2"
+
+

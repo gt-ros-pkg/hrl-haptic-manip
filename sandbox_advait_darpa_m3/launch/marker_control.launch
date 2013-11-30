@@ -1,0 +1,38 @@
+<launch>
+ 
+    <arg name="use_slip_controllers" default="false"/>
+    <arg name="stereo" default="false"/>
+    <arg name="use_right_arm" default="true"/>
+    <arg name="use_left_arm" default="true"/>
+    <arg name="use_state_validator" default="false"/>
+    <arg name="double_menu" default="false"/>
+    <arg name="kinect_frame_prefix" default="/openni" />
+    <arg name="slow_movement" default="false"/>
+    <arg name="nav_local" default="false" />
+    <arg name="nav_3d" default="false" />
+
+    <arg if="$(arg stereo)" name="head_pointing_frame" value="/narrow_stereo_optical_frame"/>
+    <arg unless="$(arg stereo)" name="head_pointing_frame" value="$(arg kinect_frame_prefix)_rgb_optical_frame"/>
+
+    <node pkg="pr2_marker_control" name="pr2_marker_control" type="pr2_marker_control" respawn="true" output="screen">
+          
+      <remap if="$(arg stereo)" from="snapshot_input_topic" to="/narrow_stereo_textured/object_modeling_points_filtered" />      
+      <remap unless="$(arg stereo)" from="snapshot_input_topic" to="/camera/rgb/object_modeling_points_filtered" />
+
+      <param name="use_state_validator" value="$(arg use_state_validator)" />
+      <param name="head_pointing_frame" value="$(arg head_pointing_frame)"/>
+
+      <remap from="right_click_point" to="/cloud_click_point" />
+      <remap from="/pr2_interactive_nav_action" to="/pr2_interactive_nav_action" /> 
+      <param name="double_menu" value="$(arg double_menu)"/>
+      <remap from="list_controllers" to="pr2_controller_manager/list_controllers"/>
+    
+    </node>
+
+
+    <!-- pr2_interactive_nav_action -->
+    <include file="$(find pr2_interactive_gripper_pose_action)/launch/pr2_interactive_nav_action.launch" >
+      <arg name="double_menu" value="$(arg double_menu)"/>
+    </include>
+
+</launch>

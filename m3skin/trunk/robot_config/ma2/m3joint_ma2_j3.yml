@@ -1,0 +1,33 @@
+actuator_component: m3actuator_ma2_j3
+brake: none
+calibration_date: Thu Jan  6 17:51:13 2011
+name: m3joint_ma2_j3
+param:
+  kq_d: -15.0
+  kq_g: 1.0
+  kq_i: -0.0
+  kq_i_limit: 10000.0
+  kq_i_range: 50.0
+  kq_p: -600.0
+  kt_d: 0.0
+  kt_i: 0.0
+  kt_i_limit: 0.0
+  kt_i_range: 0.0
+  kt_p: 0.0
+  max_q: 139.45161132812501
+  max_q_pad: 0.0
+  max_q_slew_rate: 60.0
+  min_q: 0.54838867187500284
+  min_q_pad: 0.0
+transmission:
+  act_name: m3actuator_ma2_j3
+  qj_to_qa:
+  - 1.0
+  qs_to_qj:
+  - 1.0
+  tqj_to_tqa:
+  - 1.0
+  tqs_to_tqj:
+  - 1.0
+  type: gear
+version: iss

@@ -1,0 +1,126 @@
+10
+
+dir
+92
+https://mekabot-dev.com/svn/m3skin/trunk/robot_config
+https://mekabot-dev.com/svn/m3skin
+
+
+
+2011-07-25T18:07:51.814119Z
+75
+pierre-luc
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+0117b975-96d8-444d-8b17-b57b28c9c515
+
+ma1
+dir
+
+sys
+dir
+
+ma2
+dir
+
+mr1
+dir
+
+skin_dev
+dir
+
+ros
+dir
+
+skin
+dir
+
+m3_config.yml
+file
+
+
+
+
+2012-08-31T22:14:18.684477Z
+7dc7744804f02d3cac72347deb0692ba
+2011-07-13T20:47:56.069046Z
+60
+pierre-luc
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+1499
+
+eeprom
+dir
+
+pwr
+dir
+
+data
+dir
+
+m3_component_libs.yml
+file
+
+
+
+
+2012-08-31T22:14:18.684477Z
+63458c93461e9f9322d549cdfa347534
+2011-06-23T19:03:57.776914Z
+15
+pierre-luc
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+171
+

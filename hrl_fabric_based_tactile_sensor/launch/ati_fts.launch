@@ -1,0 +1,16 @@
+
+<launch>
+
+    <!-- force torque sensors -->
+    <!-- <include file="$(find hrl_hardware_in_loop_simulation_darpa_m3)/launch/ft1.launch" /> -->
+    <include file="$(find hrl_hardware_in_loop_simulation_darpa_m3)/launch/ft5.launch" />
+    <include file="$(find hrl_hardware_in_loop_simulation_darpa_m3)/launch/ft7.launch" />
+    <include file="$(find hrl_hardware_in_loop_simulation_darpa_m3)/launch/ft8.launch" />
+    <include file="$(find hrl_hardware_in_loop_simulation_darpa_m3)/launch/ft9.launch" />
+    <!--    <include file="$(find hrl_hardware_in_loop_simulation_darpa_m3)/launch/ft10.launch" /> -->
+    <include file="$(find hrl_hardware_in_loop_simulation_darpa_m3)/launch/ft11.launch" />
+
+
+</launch>
+
+

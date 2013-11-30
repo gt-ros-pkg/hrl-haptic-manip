@@ -1,0 +1,5 @@
+<launch>
+    <node pkg="force_torque" name="ft1" type="force_torque_relay" args="--name=ft1" respawn="true"/>
+    <node pkg="force_torque" name="ft_poller_1"
+        type="force_torque_poller" args="--name=ft1 --path=/dev/ttyUSB1" respawn="true"/>
+</launch>

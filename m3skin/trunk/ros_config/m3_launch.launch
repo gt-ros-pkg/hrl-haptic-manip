@@ -1,0 +1,10 @@
+<launch>
+
+  <param name="robot_description" command="$(find xacro)/xacro.py '$(find skin_description)/robots/hrl_skin.urdf.xacro'" />
+
+  <node pkg="rviz" type="rviz" respawn="false" output="screen" name="rviz"/>  
+
+  <node pkg="robot_state_publisher" type="state_publisher" name="robot_state_publisher"/>
+
+</launch>
+

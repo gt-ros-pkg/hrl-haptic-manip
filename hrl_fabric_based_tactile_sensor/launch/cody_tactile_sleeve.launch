@@ -1,0 +1,35 @@
+
+<launch>
+    <arg name="forearm_slope" default="30." />
+    <arg name="wrist_slope" default="30." />
+
+    <include file="$(find cody)/cody.machine" />
+
+    <node name="forearm_taxels_driver" pkg="hrl_fabric_based_tactile_sensor"
+        type="cody_tactile_sleeve_driver_node.py" output='screen'
+        ns='fabric_forearm_sensor'
+        args='--serial_dev=/dev/robot/arduino2 --forearm'
+        machine='prime' >
+    </node>
+
+    <node name="forearm_taxels_calibration" pkg="hrl_fabric_based_tactile_sensor"
+        type="fabric_skin_calibration_node.py" output='screen'
+        args='--slope=$(arg forearm_slope)' ns='fabric_forearm_sensor' >
+    </node>
+
+    <node name="wrist_taxels_driver" pkg="hrl_fabric_based_tactile_sensor"
+        type="cody_tactile_sleeve_driver_node.py" output='screen'
+        ns='fabric_wrist_sensor'
+        args='--serial_dev=/dev/robot/arduino1 --wrist'
+        machine='prime' >
+    </node>
+
+    <node name="wrist_taxels_calibration" pkg="hrl_fabric_based_tactile_sensor"
+        type="fabric_skin_calibration_node.py" output='screen'
+        args='--slope=$(arg wrist_slope)' ns='fabric_wrist_sensor' >
+    </node>
+
+    <include file='$(find hrl_fabric_based_tactile_sensor)/launch/cody_tactile_sleeve_viz.launch' />
+
+</launch>
+

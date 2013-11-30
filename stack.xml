@@ -1,0 +1,11 @@
+<stack>
+  <description brief="hrl_haptic_manipulation_in_clutter"> Manipulation in clutter using haptic sensing. </description>
+  <author>Maintained by Marc Killpack, Tapomayukh Bhattacharjee,
+  Jeffrey Hawke and Daehyung Park (previously Advait Jain),. Advisor:
+  Prof. Charlie Kemp. Healthcare Robotics Lab, Georgia Tech</author>
+  <license>BSD</license>  
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/hrl_haptic_manipulation_in_clutter</url>
+  <depend stack="ros" />
+
+</stack>

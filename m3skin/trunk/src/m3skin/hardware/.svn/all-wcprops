@@ -1,0 +1,71 @@
+K 25
+svn:wc:ra_dav:version-url
+V 49
+/svn/m3skin/!svn/ver/60/trunk/src/m3skin/hardware
+END
+taxel_array.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 65
+/svn/m3skin/!svn/ver/60/trunk/src/m3skin/hardware/taxel_array.cpp
+END
+taxel_array.proto
+K 25
+svn:wc:ra_dav:version-url
+V 67
+/svn/m3skin/!svn/ver/60/trunk/src/m3skin/hardware/taxel_array.proto
+END
+taxel_array.h
+K 25
+svn:wc:ra_dav:version-url
+V 63
+/svn/m3skin/!svn/ver/50/trunk/src/m3skin/hardware/taxel_array.h
+END
+taxel_array_virtual.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 73
+/svn/m3skin/!svn/ver/13/trunk/src/m3skin/hardware/taxel_array_virtual.cpp
+END
+taxel_array_ec.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 68
+/svn/m3skin/!svn/ver/56/trunk/src/m3skin/hardware/taxel_array_ec.cpp
+END
+taxel_array_ec.proto
+K 25
+svn:wc:ra_dav:version-url
+V 70
+/svn/m3skin/!svn/ver/60/trunk/src/m3skin/hardware/taxel_array_ec.proto
+END
+taxel_array_pdo_v0_def.h
+K 25
+svn:wc:ra_dav:version-url
+V 74
+/svn/m3skin/!svn/ver/56/trunk/src/m3skin/hardware/taxel_array_pdo_v0_def.h
+END
+taxel_array_virtual.h
+K 25
+svn:wc:ra_dav:version-url
+V 71
+/svn/m3skin/!svn/ver/13/trunk/src/m3skin/hardware/taxel_array_virtual.h
+END
+taxel_array_ec.h
+K 25
+svn:wc:ra_dav:version-url
+V 66
+/svn/m3skin/!svn/ver/56/trunk/src/m3skin/hardware/taxel_array_ec.h
+END
+Makefile.am
+K 25
+svn:wc:ra_dav:version-url
+V 61
+/svn/m3skin/!svn/ver/60/trunk/src/m3skin/hardware/Makefile.am
+END
+factory_proxy.cpp
+K 25
+svn:wc:ra_dav:version-url
+V 67
+/svn/m3skin/!svn/ver/13/trunk/src/m3skin/hardware/factory_proxy.cpp
+END

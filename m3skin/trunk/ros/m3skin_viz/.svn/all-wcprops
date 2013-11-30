@@ -1,0 +1,23 @@
+K 25
+svn:wc:ra_dav:version-url
+V 44
+/svn/m3skin/!svn/ver/94/trunk/ros/m3skin_viz
+END
+CMakeLists.txt
+K 25
+svn:wc:ra_dav:version-url
+V 59
+/svn/m3skin/!svn/ver/63/trunk/ros/m3skin_viz/CMakeLists.txt
+END
+Makefile
+K 25
+svn:wc:ra_dav:version-url
+V 53
+/svn/m3skin/!svn/ver/87/trunk/ros/m3skin_viz/Makefile
+END
+manifest.xml
+K 25
+svn:wc:ra_dav:version-url
+V 57
+/svn/m3skin/!svn/ver/63/trunk/ros/m3skin_viz/manifest.xml
+END

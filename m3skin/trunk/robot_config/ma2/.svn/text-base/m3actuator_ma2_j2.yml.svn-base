@@ -1,0 +1,110 @@
+calib:
+  amp_temp:
+    cb_bias: -10.689014374999999
+    cb_scale: 1.0
+    cb_temp:
+    - 0.15151500000000001
+    - -68.622745000000009
+    name: Analog TMP36
+    type: adc_poly
+  angle_df:
+    theta_df:
+      cutoff_freq: 200
+      order: 3
+      type: butterworth
+    thetadot_df:
+      cutoff_freq: 40
+      order: 3
+      type: diff_butterworth
+    thetadotdot_df:
+      cutoff_freq: 20
+      order: 3
+      type: diff_butterworth
+    type: df_chain
+  current:
+    cb_bias: 0.0
+    cb_current_a:
+    - -7.2306361198425293
+    - 13995.18543540001
+    cb_current_b:
+    - -6.8869023323059082
+    - 13414.446100912093
+    cb_scale: 1.0
+    name: Allegro ACS712-20
+    type: adc_poly
+  ext_temp:
+    cb_bias: -3.5453337499999833
+    cb_scale: 1.0
+    cb_temp:
+    - 0.15151500000000001
+    - -66.151541250000022
+    name: Analog TMP36
+    type: adc_poly
+  motor:
+    amplifier_resistance: 0.013599999999999999
+    current_sensor_type: measured
+    gear_ratio: 100.0
+    i_scale: 1.0
+    max_efficiency: 77.0
+    max_pwm_duty: 3186.0
+    max_winding_temp: 125.0
+    mechanical_time_constant: 20.300000000000001
+    model_type: model_v1
+    name: Maxon EC45 Flat 50W 24V 339286
+    no_load_current: 116.0
+    no_load_speed: 4700.0
+    nominal_current: 1.3200000000000001
+    nominal_speed: 3410.0
+    nominal_torque: 64.200000000000003
+    nominal_voltage: 24.0
+    rotor_inertia: 135
+    safe_thermal_pct: 0.90000000000000002
+    speed_constant: 201.0
+    speed_torque_gradient: 14.300000000000001
+    stall_torque: 337.0
+    starting_current: 7.0999999999999996
+    temp_sensor_type: case
+    thermal_resistance_housing_ambient: 4.25
+    thermal_resistance_rotor_housing: 4.5
+    thermal_time_constant_motor: 212.0
+    thermal_time_constant_winding: 16.600000000000001
+    torque_constant: 47.5
+    winding_inductance: 1.1499999999999999
+    winding_resistance: 3.3799999999999999
+  theta:
+    cb_bias: 0.0
+    cb_scale: 1.0
+    cb_theta:
+    - 0.087890625
+    - -146.5576171875
+    name: US Digital MA13
+    type: ma3_12bit_poly
+  torque:
+    cb_bias: 391.6817596435547
+    cb_inv_torque:
+    - -0.019163565710186958
+    - 1955.615
+    cb_scale: 1.0
+    cb_torque:
+    - -52.056476593017578
+    - 101802.42647245407
+    name: Allegro Hall Effect
+    type: adc_poly
+  torquedot_df:
+    cutoff_freq: 100
+    order: 3
+    type: diff_butterworth
+calibration_date: Wed Mar 16 12:55:59 2011
+description: a1r1_bldc
+ec_component: m3actuator_ec_ma2_j2
+ignore_bounds: 0
+joint_component: m3joint_ma2_j2
+name: m3actuator_ma2_j2
+param:
+  max_amp_current: 10000.0
+  max_amp_temp: 125.0
+  max_overload_time: 1.0
+  max_tq: 20000.0
+  min_tq: -20000.0
+safe_pwm_limit: 1
+version: iss

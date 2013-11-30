@@ -1,0 +1,19 @@
+<package>
+  <description brief="hrl_proximity_to_skin_msg">
+
+     hrl_proximity_to_skin_msg
+
+  </description>
+  <author>Killpack Family</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/hrl_proximity_to_skin_msg</url>
+  <depend package="tf"/>
+  <depend package="roscpp"/>
+  <depend package="hrl_haptic_manipulation_in_clutter_msgs"/>
+  <depend package="m3skin_ros"/>
+
+
+</package>
+
+

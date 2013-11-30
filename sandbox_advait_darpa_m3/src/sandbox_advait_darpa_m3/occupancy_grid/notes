@@ -1,0 +1,30 @@
+
+
+Nov 21, 2011:
+
+ - starting to try out octomap
+ - downloaded octomap_mapping stack (tagged 0.3.5) and
+   octomap_visualization stack (0.1.1)
+ - also downloaded armnavigation stack (for arm_navigation_msgs):
+     hg clone https://kforge.ros.org/armnavigation/armnavigation ./armnavigation
+ - install libqt dependencies for octomap_visualization, look at rosdep.yaml
+
+
+Steps for initial visualization:
+ - get freiburg_outdoor.bt from http://octomap.sourceforge.net/
+   (bottom of the page)
+
+ - cd octomap_visualization/octovis/octovis/bin
+ - run octovis and open freiburg_outdoor.bt
+
+Steps for initial visualization in rviz:
+ - rosrun  octomap_server octomap_server_node <path to freiburg.bt>
+     * should see something like:
+        [INFO] [1321902579.719058922]: Octomap file /home/advait/temp/freiburg_outdoor.bt loaded (5619516 nodes).
+ 
+ - rosrun rviz rviz and open the file: darpa_m3/viz/octomap_viz_default.vcg
+
+
+
+
+

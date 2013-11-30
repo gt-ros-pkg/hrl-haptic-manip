@@ -1,0 +1,71 @@
+K 25
+svn:wc:ra_dav:version-url
+V 29
+/svn/m3skin/!svn/ver/92/trunk
+END
+ChangeLog
+K 25
+svn:wc:ra_dav:version-url
+V 38
+/svn/m3skin/!svn/ver/2/trunk/ChangeLog
+END
+THANKS
+K 25
+svn:wc:ra_dav:version-url
+V 35
+/svn/m3skin/!svn/ver/2/trunk/THANKS
+END
+COPYING
+K 25
+svn:wc:ra_dav:version-url
+V 36
+/svn/m3skin/!svn/ver/2/trunk/COPYING
+END
+Makefile.am
+K 25
+svn:wc:ra_dav:version-url
+V 41
+/svn/m3skin/!svn/ver/64/trunk/Makefile.am
+END
+autogen.sh
+K 25
+svn:wc:ra_dav:version-url
+V 39
+/svn/m3skin/!svn/ver/2/trunk/autogen.sh
+END
+NEWS
+K 25
+svn:wc:ra_dav:version-url
+V 33
+/svn/m3skin/!svn/ver/2/trunk/NEWS
+END
+README
+K 25
+svn:wc:ra_dav:version-url
+V 35
+/svn/m3skin/!svn/ver/2/trunk/README
+END
+configure.ac
+K 25
+svn:wc:ra_dav:version-url
+V 42
+/svn/m3skin/!svn/ver/48/trunk/configure.ac
+END
+AUTHORS
+K 25
+svn:wc:ra_dav:version-url
+V 36
+/svn/m3skin/!svn/ver/2/trunk/AUTHORS
+END
+m3skin_compile.sh
+K 25
+svn:wc:ra_dav:version-url
+V 47
+/svn/m3skin/!svn/ver/64/trunk/m3skin_compile.sh
+END
+INSTALL
+K 25
+svn:wc:ra_dav:version-url
+V 36
+/svn/m3skin/!svn/ver/2/trunk/INSTALL
+END

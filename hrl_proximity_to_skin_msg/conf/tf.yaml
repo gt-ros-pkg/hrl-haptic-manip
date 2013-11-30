@@ -1,0 +1,489 @@
+patch_0:
+    x_pos:    0.150000
+    y_pos:    0.006238
+    z_pos:    -0.077974
+    x_ori:    -0.130150
+    y_ori:    0.022740
+    z_ori:    -0.991233
+    string_parent_frame:    l_upper_arm_link
+patch_1:
+    x_pos:    0.204286
+    y_pos:    0.053317
+    z_pos:    -0.080407
+    x_ori:    0.004280
+    y_ori:    0.497062
+    z_ori:    -0.867704
+    string_parent_frame:    l_upper_arm_link
+patch_2:
+    x_pos:    0.263611
+    y_pos:    0.033990
+    z_pos:    -0.085431
+    x_ori:    0.034151
+    y_ori:    0.238895
+    z_ori:    -0.970445
+    string_parent_frame:    l_upper_arm_link
+patch_3:
+    x_pos:    0.327500
+    y_pos:    0.023294
+    z_pos:    -0.085209
+    x_ori:    0.060867
+    y_ori:    0.169712
+    z_ori:    -0.983612
+    string_parent_frame:    l_upper_arm_link
+patch_4:
+    x_pos:    0.382857
+    y_pos:    0.026354
+    z_pos:    -0.084940
+    x_ori:    -0.045698
+    y_ori:    0.103595
+    z_ori:    -0.993569
+    string_parent_frame:    l_upper_arm_link
+patch_5:
+    x_pos:    0.396944
+    y_pos:    0.062876
+    z_pos:    -0.050105
+    x_ori:    0.043929
+    y_ori:    0.923064
+    z_ori:    -0.382130
+    string_parent_frame:    l_upper_arm_link
+patch_6:
+    x_pos:    0.449091
+    y_pos:    0.060002
+    z_pos:    -0.044216
+    x_ori:    0.544897
+    y_ori:    0.703447
+    z_ori:    -0.456344
+    string_parent_frame:    l_upper_arm_link
+patch_7:
+    x_pos:    0.442083
+    y_pos:    0.063660
+    z_pos:    -0.020772
+    x_ori:    0.285686
+    y_ori:    0.941006
+    z_ori:    -0.181358
+    string_parent_frame:    l_upper_arm_link
+patch_8:
+    x_pos:    0.409643
+    y_pos:    0.068293
+    z_pos:    -0.001920
+    x_ori:    0.034536
+    y_ori:    0.999374
+    z_ori:    -0.007714
+    string_parent_frame:    l_upper_arm_link
+patch_9:
+    x_pos:    0.415000
+    y_pos:    0.066112
+    z_pos:    0.030307
+    x_ori:    0.085498
+    y_ori:    0.980419
+    z_ori:    0.177392
+    string_parent_frame:    l_upper_arm_link
+patch_10:
+    x_pos:    0.340000
+    y_pos:    0.060443
+    z_pos:    0.004778
+    x_ori:    -0.591006
+    y_ori:    0.806199
+    z_ori:    0.027494
+    string_parent_frame:    l_upper_arm_link
+patch_11:
+    x_pos:    0.332500
+    y_pos:    0.060065
+    z_pos:    -0.033892
+    x_ori:    -0.418539
+    y_ori:    0.887302
+    z_ori:    -0.193704
+    string_parent_frame:    l_upper_arm_link
+patch_12:
+    x_pos:    0.271250
+    y_pos:    0.060643
+    z_pos:    -0.029101
+    x_ori:    0.078370
+    y_ori:    0.992571
+    z_ori:    0.093063
+    string_parent_frame:    l_upper_arm_link
+patch_13:
+    x_pos:    0.219167
+    y_pos:    0.065979
+    z_pos:    -0.013755
+    x_ori:    0.102538
+    y_ori:    0.992929
+    z_ori:    0.059811
+    string_parent_frame:    l_upper_arm_link
+patch_14:
+    x_pos:    0.158750
+    y_pos:    0.072492
+    z_pos:    -0.005160
+    x_ori:    0.082761
+    y_ori:    0.995956
+    z_ori:    -0.034971
+    string_parent_frame:    l_upper_arm_link
+patch_15:
+    x_pos:    0.177500
+    y_pos:    0.063167
+    z_pos:    0.046052
+    x_ori:    -0.064387
+    y_ori:    0.768476
+    z_ori:    0.636631
+    string_parent_frame:    l_upper_arm_link
+patch_16:
+    x_pos:    0.241190
+    y_pos:    0.058538
+    z_pos:    0.036011
+    x_ori:    0.548796
+    y_ori:    0.488305
+    z_ori:    0.678514
+    string_parent_frame:    l_upper_arm_link
+patch_17:
+    x_pos:    0.290000
+    y_pos:    0.044034
+    z_pos:    0.010161
+    x_ori:    -0.103015
+    y_ori:    0.160350
+    z_ori:    0.981670
+    string_parent_frame:    l_upper_arm_link
+patch_18:
+    x_pos:    0.286875
+    y_pos:    0.005409
+    z_pos:    0.014913
+    x_ori:    0.229835
+    y_ori:    0.011442
+    z_ori:    0.973162
+    string_parent_frame:    l_upper_arm_link
+patch_19:
+    x_pos:    0.248929
+    y_pos:    0.015428
+    z_pos:    0.046237
+    x_ori:    0.644649
+    y_ori:    0.079299
+    z_ori:    0.760355
+    string_parent_frame:    l_upper_arm_link
+patch_20:
+    x_pos:    0.173333
+    y_pos:    0.001959
+    z_pos:    0.072243
+    x_ori:    0.076278
+    y_ori:    -0.000701
+    z_ori:    0.997086
+    string_parent_frame:    l_upper_arm_link
+patch_21:
+    x_pos:    0.148333
+    y_pos:    -0.048550
+    z_pos:    0.066071
+    x_ori:    -0.144465
+    y_ori:    -0.605892
+    z_ori:    0.782320
+    string_parent_frame:    l_upper_arm_link
+patch_22:
+    x_pos:    0.221250
+    y_pos:    -0.055425
+    z_pos:    0.059373
+    x_ori:    0.388232
+    y_ori:    -0.464930
+    z_ori:    0.795686
+    string_parent_frame:    l_upper_arm_link
+patch_23:
+    x_pos:    0.280625
+    y_pos:    -0.012183
+    z_pos:    0.017000
+    x_ori:    0.202528
+    y_ori:    -0.055328
+    z_ori:    0.977712
+    string_parent_frame:    l_upper_arm_link
+patch_24:
+    x_pos:    0.265000
+    y_pos:    -0.060836
+    z_pos:    -0.007904
+    x_ori:    0.155824
+    y_ori:    -0.881738
+    z_ori:    0.445260
+    string_parent_frame:    l_upper_arm_link
+patch_25:
+    x_pos:    0.205000
+    y_pos:    -0.066759
+    z_pos:    0.004740
+    x_ori:    0.100655
+    y_ori:    -0.991435
+    z_ori:    0.083219
+    string_parent_frame:    l_upper_arm_link
+patch_26:
+    x_pos:    0.165000
+    y_pos:    -0.071428
+    z_pos:    -0.009280
+    x_ori:    0.062124
+    y_ori:    -0.995901
+    z_ori:    -0.065736
+    string_parent_frame:    l_upper_arm_link
+patch_27:
+    x_pos:    0.140000
+    y_pos:    -0.047905
+    z_pos:    -0.064106
+    x_ori:    -0.341702
+    y_ori:    -0.548990
+    z_ori:    -0.762790
+    string_parent_frame:    l_upper_arm_link
+patch_28:
+    x_pos:    0.185000
+    y_pos:    -0.025989
+    z_pos:    -0.077720
+    x_ori:    -0.113491
+    y_ori:    -0.161481
+    z_ori:    -0.980328
+    string_parent_frame:    l_upper_arm_link
+patch_29:
+    x_pos:    0.192778
+    y_pos:    -0.067895
+    z_pos:    -0.041972
+    x_ori:    -0.021413
+    y_ori:    -0.966145
+    z_ori:    -0.257109
+    string_parent_frame:    l_upper_arm_link
+patch_30:
+    x_pos:    0.254286
+    y_pos:    -0.063384
+    z_pos:    -0.037326
+    x_ori:    0.087595
+    y_ori:    -0.988141
+    z_ori:    -0.126117
+    string_parent_frame:    l_upper_arm_link
+patch_31:
+    x_pos:    0.248333
+    y_pos:    -0.017159
+    z_pos:    -0.086018
+    x_ori:    -0.039470
+    y_ori:    -0.047241
+    z_ori:    -0.998103
+    string_parent_frame:    l_upper_arm_link
+patch_32:
+    x_pos:    0.315000
+    y_pos:    -0.013073
+    z_pos:    -0.086282
+    x_ori:    0.176318
+    y_ori:    -0.053813
+    z_ori:    -0.982861
+    string_parent_frame:    l_upper_arm_link
+patch_33:
+    x_pos:    0.311875
+    y_pos:    -0.060073
+    z_pos:    -0.048726
+    x_ori:    0.108439
+    y_ori:    -0.991986
+    z_ori:    -0.064847
+    string_parent_frame:    l_upper_arm_link
+patch_34:
+    x_pos:    0.338333
+    y_pos:    -0.060162
+    z_pos:    -0.006318
+    x_ori:    -0.515063
+    y_ori:    -0.856665
+    z_ori:    -0.028913
+    string_parent_frame:    l_upper_arm_link
+patch_35:
+    x_pos:    0.397143
+    y_pos:    -0.067240
+    z_pos:    0.022917
+    x_ori:    -0.012221
+    y_ori:    -0.993914
+    z_ori:    0.109478
+    string_parent_frame:    l_upper_arm_link
+patch_36:
+    x_pos:    0.394688
+    y_pos:    -0.068058
+    z_pos:    -0.013209
+    x_ori:    -0.024390
+    y_ori:    -0.997961
+    z_ori:    -0.058978
+    string_parent_frame:    l_upper_arm_link
+patch_37:
+    x_pos:    0.453889
+    y_pos:    -0.061240
+    z_pos:    -0.016523
+    x_ori:    0.559374
+    y_ori:    -0.794519
+    z_ori:    -0.236305
+    string_parent_frame:    l_upper_arm_link
+patch_38:
+    x_pos:    0.440000
+    y_pos:    -0.059998
+    z_pos:    -0.053607
+    x_ori:    0.436477
+    y_ori:    -0.715566
+    z_ori:    -0.545393
+    string_parent_frame:    l_upper_arm_link
+patch_39:
+    x_pos:    0.372500
+    y_pos:    -0.060014
+    z_pos:    -0.056100
+    x_ori:    -0.195117
+    y_ori:    -0.824395
+    z_ori:    -0.531322
+    string_parent_frame:    l_upper_arm_link
+patch_40:
+    x_pos:    0.356667
+    y_pos:    -0.015132
+    z_pos:    -0.085363
+    x_ori:    -0.074199
+    y_ori:    -0.047361
+    z_ori:    -0.996118
+    string_parent_frame:    l_upper_arm_link
+patch_41:
+    x_pos:    0.122500
+    y_pos:    0.057480
+    z_pos:    0.022503
+    x_ori:    -0.140841
+    y_ori:    0.943798
+    z_ori:    0.299015
+    string_parent_frame:    l_forearm_link
+patch_42:
+    x_pos:    0.151667
+    y_pos:    0.035589
+    z_pos:    -0.045445
+    x_ori:    0.030955
+    y_ori:    0.456685
+    z_ori:    -0.889090
+    string_parent_frame:    l_forearm_link
+patch_43:
+    x_pos:    0.210000
+    y_pos:    0.015361
+    z_pos:    -0.047381
+    x_ori:    -0.029279
+    y_ori:    0.160583
+    z_ori:    -0.986588
+    string_parent_frame:    l_forearm_link
+patch_44:
+    x_pos:    0.277308
+    y_pos:    0.019611
+    z_pos:    -0.047059
+    x_ori:    -0.104975
+    y_ori:    -0.123547
+    z_ori:    -0.986771
+    string_parent_frame:    l_forearm_link
+patch_45:
+    x_pos:    0.313125
+    y_pos:    0.059346
+    z_pos:    -0.008847
+    x_ori:    -0.060522
+    y_ori:    0.949793
+    z_ori:    -0.306970
+    string_parent_frame:    l_forearm_link
+patch_46:
+    x_pos:    0.243333
+    y_pos:    0.059596
+    z_pos:    -0.010553
+    x_ori:    0.015932
+    y_ori:    0.999657
+    z_ori:    0.020769
+    string_parent_frame:    l_forearm_link
+patch_47:
+    x_pos:    0.197500
+    y_pos:    0.054596
+    z_pos:    -0.007796
+    x_ori:    0.050484
+    y_ori:    0.998667
+    z_ori:    0.010743
+    string_parent_frame:    l_forearm_link
+patch_48:
+    x_pos:    0.223095
+    y_pos:    0.016784
+    z_pos:    0.023508
+    x_ori:    0.268554
+    y_ori:    0.128861
+    z_ori:    0.954607
+    string_parent_frame:    l_forearm_link
+patch_49:
+    x_pos:    0.260000
+    y_pos:    0.008016
+    z_pos:    0.010039
+    x_ori:    0.606348
+    y_ori:    0.009298
+    z_ori:    0.795145
+    string_parent_frame:    l_forearm_link
+patch_50:
+    x_pos:    0.260000
+    y_pos:    -0.005164
+    z_pos:    0.010145
+    x_ori:    0.579676
+    y_ori:    -0.068352
+    z_ori:    0.811975
+    string_parent_frame:    l_forearm_link
+patch_51:
+    x_pos:    0.218824
+    y_pos:    -0.008443
+    z_pos:    0.025383
+    x_ori:    0.266364
+    y_ori:    -0.026679
+    z_ori:    0.963503
+    string_parent_frame:    l_forearm_link
+patch_52:
+    x_pos:    0.200000
+    y_pos:    -0.059592
+    z_pos:    0.013486
+    x_ori:    0.072686
+    y_ori:    -0.900182
+    z_ori:    0.429406
+    string_parent_frame:    l_forearm_link
+patch_53:
+    x_pos:    0.249286
+    y_pos:    -0.057100
+    z_pos:    0.008785
+    x_ori:    0.151321
+    y_ori:    -0.381381
+    z_ori:    0.911949
+    string_parent_frame:    l_forearm_link
+patch_54:
+    x_pos:    0.306154
+    y_pos:    -0.059167
+    z_pos:    -0.002339
+    x_ori:    -0.257398
+    y_ori:    -0.965883
+    z_ori:    0.028571
+    string_parent_frame:    l_forearm_link
+patch_55:
+    x_pos:    0.276071
+    y_pos:    -0.030923
+    z_pos:    -0.046369
+    x_ori:    -0.097028
+    y_ori:    0.131596
+    z_ori:    -0.986543
+    string_parent_frame:    l_forearm_link
+patch_56:
+    x_pos:    0.204444
+    y_pos:    -0.033873
+    z_pos:    -0.044619
+    x_ori:    -0.068585
+    y_ori:    -0.381563
+    z_ori:    -0.921795
+    string_parent_frame:    l_forearm_link
+patch_57:
+    x_pos:    0.137083
+    y_pos:    -0.045803
+    z_pos:    -0.041182
+    x_ori:    -0.078114
+    y_ori:    -0.607097
+    z_ori:    -0.790779
+    string_parent_frame:    l_forearm_link
+patch_58:
+    x_pos:    0.110000
+    y_pos:    -0.046376
+    z_pos:    0.047814
+    x_ori:    -0.251406
+    y_ori:    -0.803512
+    z_ori:    0.539596
+    string_parent_frame:    l_forearm_link
+patch_59:
+    x_pos:    0.126000
+    y_pos:    0.000000
+    z_pos:    0.066860
+    x_ori:    -0.205818
+    y_ori:    -0.002933
+    z_ori:    0.978586
+    string_parent_frame:    l_forearm_link
+patch_60:
+    x_pos:    0.126000
+    y_pos:    0.000000
+    z_pos:    0.066860
+    x_ori:    -0.205818
+    y_ori:    -0.002933
+    z_ori:    0.978586
+    string_parent_frame:    l_forearm_link
+

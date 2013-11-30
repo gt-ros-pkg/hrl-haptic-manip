@@ -1,0 +1,36 @@
+<package>
+    <description brief="hrl_tactile_controller">
+
+        hrl_tactile_controller
+    </description>
+    <author>Jeff Hawke, Marc Killpack. Advisor: Prof. Charlie Kemp. Healthcare
+        Robotics Lab, Georgia Tech</author>
+    <license>BSD</license>
+    <review status="unreviewed" notes=""/>
+    <url>http://ros.org/wiki/sandbox_advait_darpa_m3</url>
+    <depend package="rospy"/>
+    <depend package="trajectory_msgs"/>
+    <depend package="hrl_haptic_controllers_darpa_m3"/>
+    <depend package="hrl_software_simulation_darpa_m3"/>
+    <depend package="hrl_common_code_darpa_m3"/>
+    <depend package="hrl_motion_planners_darpa_m3"/>
+    <depend package="hrl_msgs"/>
+    <depend package="equilibrium_point_control"/>
+    <depend package="hrl_lib"/>
+    <depend package="hrl_haptic_manipulation_in_clutter_msgs"/>
+    <depend package="hrl_haptic_manipulation_in_clutter_srvs"/>
+
+    <depend package="urdf_parser_py"/> <!--http://www.ros.org/wiki/urdf_parser_py-->
+    <depend package="pykdl_utils"/> <!--gt-ros-pkg.hrl-kdl repo on google code-->
+
+    <depend package="interactive_markers"/>
+
+    <!-- PR2 Dependencies -->
+    <depend package="pr2_controllers_msgs"/>
+
+    <!-- Cody dependencies -->
+    <depend package="hrl_cody_arms"/>
+    
+</package>
+
+

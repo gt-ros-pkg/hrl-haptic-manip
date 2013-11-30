@@ -176,7 +176,7 @@ def initialiseOptParser(p):
   p.add_option('--orientation', '-o', action='store_true', dest='orientation',
                help='try to go to commanded orientation in addition to position')
   p.add_option('--robot', '-r', action='store', dest='robot',
-               help='robot name: cody, cody5dof, pr2, sim3, sim3_nolim, sim3_with_hand, simcody')
+               help='robot name: cody, cody5dof, pr2, sim3, sim3_nolim, sim3_with_hand, simcody, darpa, kreacher, darci, darci_sim')
   p.add_option('--sensor', '-s', action='store', dest='sensor',
                help='sensor type: meka_sensor, fabric_sensor, hil, ignore')
   p.add_option('--use_wrist_joints', action='store_true', dest='use_wrist_joints',
@@ -185,6 +185,8 @@ def initialiseOptParser(p):
                help='which arm to use (l, r)', default=None)
   p.add_option('--start_test', action='store_true', dest='start_test',
                help='makes cody move to specified jep if true')
+  p.add_option('--verbose', '-v', action='store_true', dest='verbose',
+               help='provide extra detail in ouput')
 
 ## Takes an optparse.OptionParser as an input, and returns a valid opt structure (or flags an error).
 # @param p optparse.OptionParser object
@@ -192,7 +194,7 @@ def initialiseOptParser(p):
 def getValidInput(p):
   opt, args = p.parse_args()
   # Validate input options
-  valid_robots = ['cody', 'cody5dof', 'pr2', 'sim3', 'sim3_nolim', 'sim3_with_hand', 'simcody', 'crona']
+  valid_robots = ['cody', 'cody5dof', 'pr2', 'sim3', 'sim3_nolim', 'sim3_with_hand', 'simcody', 'crona', 'darpa', 'sim_equal_links_1', 'kreacher', 'darci', 'darci_sim']
   valid_sensors = ['meka', 'fabric', 'hil', 'none', 'pps', 'sim']
 
   if opt.robot and opt.robot not in valid_robots:

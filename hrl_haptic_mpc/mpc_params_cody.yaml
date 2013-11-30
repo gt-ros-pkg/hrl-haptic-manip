@@ -1,36 +1,46 @@
 haptic_mpc:
   control_params:
-    static_contact_stiffness_estimate: 200.0
+    static_contact_stiffness_estimate: 50.0 #default=50.0
     estimate_contact_stiffness: false
 
-    # greedy to goal params. These are basically the same for all controllers
-    position_weight: 5.0
-    goal_velocity_for_hand: 0.5 # Position step size is determined from this
-    position_scale_size: 0.1 # metres. If dist remaining is less than this, scale the step size.
-    position_scale_gradient: 1.0 # multiplier
+    #Weights in optimization
+    position_weight: 1.0 #default=5.0
+    orientation_weight: 1.0 #default=4.0
+    jerk_opt_weight: 0.0001 #defalut = 0.0001 Increases cost of step size (limits step size)
+    force_reduction_weight: 0.0005 #default=0.0005
 
-    orientation_weight: 4.0
-    orientation_step_size: 0.4 # degrees per step in orientation
-    orientation_scale_size: 30.0 # degrees. If the angular distance remaining is less than this, scale accordingly.
-    orientation_scale_gradient: 1.0 # multiplier. 
+    ### Weight Scaling -- Reduce weights on terms in optimization as they are close to satisfied ###
+    # If dist to goal is less than this, linearly decrease weight (from position_weight at radius to 0 at goal).
+    position_weight_scaling_radius: 0.1 #meters. default=0.1
+    # If ang to goal is less than this, linearly decrease weight (from orientation_weight at radius to 0 at goal).
+    orientation_weight_scaling_radius: 12.5 #degrees. default=20.0
+
+    #If dist to goal is less than this, linearly scale down the step size (from max step (des_vel x 1/freq) at radius to 0 at goal).
+    position_step_scaling_radius: 0.25 #meters. default=0.25
+    # If ang to goal is less than this, linearly scale down the step size (from max step (des_ang_vel x 1/freq) at radius to 0 at goal).
+    orientation_step_scaling_radius: 12.5 #degrees. default=30.0
+
+    #If within the deadzone (requires both if pos and ort weights > 0), do nothing.
+    deadzone_distance: 0.01 # distance to goal position. metres. default=0.01
+    deadzone_angle: 10.0 # degrees to goal orientation. degrees.  default=5.0
+
+    ####### Limit the max difference between desired angles and real angles to this value for each joint
+    # hard reset to this limit if exceeded
+    angle_reset_threshold: 25.0 #degrees. 
+    # Pass this limit as a constraint to the optimization
+    angle_constraint_threshold: 20.0 #degrees. 
+
+    #Goal velocities and update frequency will give max change per step
+    goal_velocity_for_hand: 0.5 #meters/sec. default=0.5
+    goal_ang_velocity_for_hand: 30.0 #degrees/sec. default=20.0
+    frequency: 25.0 # Hz. default=25.0 #NB: PR2 solver slows to ~25-50 Hz with multiple contacts, don't go above this.
 
     posture_weight: 0.0 # Cost function weight term
     posture_step_size: 0.1 # Step size in degrees
     posture_step_scale: 10.0 # scale term. If we're within 10 steps of the goal, reduce the step allowed proportionally. 
 
-    force_reduction_weight: 0.0005
-    jerk_opt_weight: 0.00001
-
     # Force parameters
-    force_reduction_goal: 0.1
-    allowable_contact_force: 3.0    
-    max_delta_force_mag: 0.1
-    stopping_force: 5.0
-
-    timeout: 100.0 #seconds
-  
-    deadzone_distance: 0.0 # distance to goal in metres
-    deadzone_angle: 10.0 # degrees to goal
-
-    goal_velocity_for_hand: 0.5
-    frequency: 25.0
+    force_reduction_goal: 0.1 # desired delta for force reduction. default=0.1
+    allowable_contact_force: 3.0 # Max force allowed by the controller
+    max_delta_force_mag: 0.1 # Max change in force allowed
+    stopping_force: 100.0 # Completely shutdown if this is exceeded

@@ -133,7 +133,7 @@ class TaxelArrayClient():
   # @param skin_topic The topic name triggering the callback. Used to identify what sensor the TaxelArray came from (as there may be multiple publishers running)
   def skinCallback(self, msg, skin_topic):
     with self.data_lock:
-      self.skin_data[skin_topic] = msg # Data should be of type TaxelArray
+      #self.skin_data[skin_topic] = msg # Data should be of type TaxelArray
       # DIRTY DIRTY DIRTY HACK to ignore pr2 wrist taxel.
 #      if self.joint_angles and self.joint_angles[5] < np.radians(-90.0): 
 #        #print self.joint_angles
@@ -163,6 +163,9 @@ class TaxelArrayClient():
       trimmed_msg = self.trimTaxelArray(msg, self.trim_threshold)
       transformed_msg = self.transformTaxelArray(trimmed_msg, self.torso_frame)
       self.trimmed_skin_data[skin_topic] = transformed_msg
+
+      transformed_full_msg = self.transformTaxelArray(msg, self.torso_frame)
+      self.skin_data[skin_topic] = transformed_full_msg
       
   
   ## Transform a single taxel array message from one frame to another
@@ -241,7 +244,24 @@ class TaxelArrayClient():
  
     # For each taxel entry in the TaxelArray, check if the force (or distance) is greater than the threshold
     for i in range(0, len(ta_msg.centers_x)):
-      magnitude = np.sqrt(ta_msg.values_x[i]**2 + ta_msg.values_y[i]**2 + ta_msg.values_z[i]**2)
+
+      # Avoid overflow
+      if abs(ta_msg.values_x[i])<1e-6: 
+        values_x = 0.0
+      else:
+        values_x = ta_msg.values_x[i]
+
+      if abs(ta_msg.values_y[i])<1e-6: 
+        values_y = 0.0
+      else:
+        values_y = ta_msg.values_y[i]
+
+      if abs(ta_msg.values_z[i])<1e-6: 
+        values_z = 0.0
+      else:
+        values_z = ta_msg.values_z[i]
+
+      magnitude = np.sqrt(values_x*values_x + values_y*values_y + values_z*values_z)
       
       threshold_valid = False
       if ta_msg.sensor_type == "force" and (magnitude >= threshold or magnitude <= -threshold):
@@ -252,6 +272,7 @@ class TaxelArrayClient():
         threshold_valid = True
       
       if threshold_valid:
+
         # Copy the values to the new data structure        
         new_ta_msg.values_x.append(ta_msg.values_x[i])
         new_ta_msg.values_y.append(ta_msg.values_y[i])
@@ -264,7 +285,9 @@ class TaxelArrayClient():
         new_ta_msg.normals_x.append(ta_msg.normals_x[i])
         new_ta_msg.normals_y.append(ta_msg.normals_y[i])
         new_ta_msg.normals_z.append(ta_msg.normals_z[i])
-        
+
+        if len(ta_msg.contact_cost) > 0:
+          new_ta_msg.contact_cost.append(ta_msg.contact_cost[i])
         # TODO SURVY: Persist the id of this taxel too.
        
         if i < len(ta_msg.link_names): # Some taxel arrays weren't publishing a link name list. Check if this exists.

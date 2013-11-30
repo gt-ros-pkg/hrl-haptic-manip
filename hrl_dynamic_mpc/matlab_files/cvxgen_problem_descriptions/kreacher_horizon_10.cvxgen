@@ -1,0 +1,99 @@
+dimensions
+  task = 2 #size of task space - x,y in plane
+  m = 4  # inputs.
+  n = 4  # states.
+  T = 10 # horizon.
+  Ty = 4
+end
+
+parameters
+  alpha nonnegative
+  mu nonnegative
+  delta_x_d (task) # desired ee change
+  A_tl(n,n)
+  A_tr(n,n)
+  A_bl(n,n)
+  A_br(n,n)   
+  B_t1(n, n)
+  B_b1(n, n)
+  
+  
+  #qd_max (n) nonnegative
+  u_max (n) nonnegative
+  q_min (n)
+  q_max (n)
+  #n_J_all(n_c,n)
+  #n_K_J_over(n_c,n)
+  #delta_f_des(n_c)  
+  #vel_norm_J(n,n)
+  #J_T_K_J[num](n,n), num=1..n_c
+  J (task,n)
+  #f_max_delta_t (n)
+  tau_max_delta_t (n)
+  mass (n,n) psd
+  #Kp (n,n) psd
+  #Kd (n,n) psd
+  #vel_norm_J (3,n)
+  
+  q_des_cur[0] (m)
+  qd[0] (n)
+  q[0] (n)
+  #f_cur (n_c)
+  #contact_J[num] (3, n), num=1..n_c
+  #tau_cont_sum[0] (n)
+end
+
+variables  
+  #impulse_eps(n)
+  #qd_eps(n)
+  q[t] (n), t=1..T+Ty+1
+  qd[t] (n), t=1..T+Ty+1
+  q_des_cur[t] (n), t=1..T+1
+  u[t] (m), t=0..T  # input.
+end
+
+minimize
+  sum[t=0..T+Ty](alpha*quad(delta_x_d-J*(q[t+1]-q[t]))) + mu #*sum[t=0..T](quad(u[t]))  # + gamma*quad(qd_eps)  + zeta*quad(impulse_eps)  #zeta*sum[t=0..T+1](quad(vel_norm_J*qd[t]))
+  #using n_K_J_over at every time step instead of just T+1 causes the problem not to converge ####beta*sum[t=0..T](quad(n_K_J_over*(q[t+1]-q[0]) - delta_f_des))
+  
+subject to
+  #state[t+1] == A*state[t] + B*(q_des_cur[t] + u[t]), t=0..T
+  #qd[t+1] == A_tl*qd[t] + A_tr*q[t] + B_tr*(q_des_cur[t] + u[t])+ B_tl*tau_cont_sum[t], t=0..T
+  #q[t+1] == A_bl*qd[t] + A_br*q[t] + B_br*(q_des_cur[t] + u[t]) + B_bl*tau_cont_sum[t], t=0..T
+  #tau_cont_sum[t+1] == tau_cont_sum[t] + all_J_T_K_J*(q[t+1]-q[t]), t=0..T
+  
+  
+  qd[t+1] == A_tl*qd[t] + A_tr*q[t] + B_t1*(q_des_cur[t] + u[t]), t=0..T # + B_t2*(tau_cont_sum[0])
+  q[t+1]  == A_bl*qd[t] + A_br*q[t] + B_b1*(q_des_cur[t] + u[t]), t=0..T # + B_b2*(tau_cont_sum[0])
+  
+  qd[t+1] == A_tl*qd[t] + A_tr*q[t] + B_t1*(q_des_cur[T+1]), t=T+1..T+Ty # + B_t2*(tau_cont_sum[0])
+  q[t+1]  == A_bl*qd[t] + A_br*q[t] + B_b1*(q_des_cur[T+1]), t=T+1..T+Ty # + B_b2*(tau_cont_sum[0])
+  
+  
+  q_des_cur[t+1] == q_des_cur[t] + u[t], t=0..T
+  
+  #abs(qd[t+1]) <= qd_max+qd_eps, t=0..T
+  q_min <= q[t+1] <= q_max, t=0..T+Ty
+  abs(u[t]) <= u_max, t=0..T  #box limit on changes in q_des_cur
+  abs(2*mass*qd[t+1]) <= tau_max_delta_t, t=0..T+Ty
+  
+  
+  
+  
+  #n_K_J_all*(q[t+1]-q[0]) <= delta_f_max, t=0..T #+ f_eps, t=0..T
+  #n_K_J_all*(q[t+1]-q[0]) <= delta_f_max + f_eps[t+1], t=0..T
+  #abs(n_K_J_all*(q[t+1]-q[t])) <= delta_rate_f_max + rate_f_eps[t+1], t=0..T
+  
+  
+  
+  #n_K_J_all*(q[t+1]-q[0]) <= delta_f_max + f_eps[t+1], t=0..T
+  #delta_f_min <= n_K_J_all*(q[t+1]-q[0]), t=0..T
+  
+  #-n_J_all*qd[T] <= delta_cont_vel_max #, t=0..T
+  #tau_cont_sum[t+1] == tau_cont_sum[t] + sum[num=1..n_c](J_T_K_J[num]*(q[t+1]-q[t])), t=0..T
+  
+  #this is an attempt to limit joint velocity w.r.t. a simple impact model
+  #abs(2*mass*qd[t+1]) <= tau_max_delta_t + impulse_eps, t=0..T
+  
+  #2*mass_n_J_com*qd[t+1] <= f_max_delta_t +impulse_eps, t=0..T
+end

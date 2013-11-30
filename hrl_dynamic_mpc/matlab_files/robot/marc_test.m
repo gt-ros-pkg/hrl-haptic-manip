@@ -1,0 +1,1 @@
+[T1, q, qd] = threelink.fdyn(0.1, 'torquefun', [0, 0, 0], [0, 0, 0])

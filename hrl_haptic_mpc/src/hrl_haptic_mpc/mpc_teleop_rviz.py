@@ -33,17 +33,16 @@ import rospy
 import hrl_lib.transforms as tr
 import haptic_mpc_util
 import hrl_haptic_manipulation_in_clutter_msgs.msg as haptic_msgs
-import std_msgs.msg
 
 import interactive_markers.interactive_marker_server as ims
 import interactive_markers.menu_handler as mh
 
-import actionlib
 from visualization_msgs.msg import Marker, InteractiveMarker, InteractiveMarkerFeedback, InteractiveMarkerControl
-from geometry_msgs.msg import PoseStamped, PointStamped, PoseArray
-from std_msgs.msg import String, Bool, Empty
-from pr2_controllers_msgs.msg import Pr2GripperCommandGoal, Pr2GripperCommandAction, Pr2GripperCommand
-
+from geometry_msgs.msg import PoseStamped, PointStamped, PoseArray, Point, Quaternion
+from std_msgs.msg import String, Bool, Empty, ColorRGBA
+from pr2_controllers_msgs.msg import Pr2GripperCommandGoal, Pr2GripperCommandAction, Pr2GripperCommand, JointTrajectoryControllerState as JTCS
+from kinematics_msgs.srv import GetKinematicSolverInfo, GetPositionIK, GetPositionIKRequest
+from kinematics_msgs.msg import PositionIKRequest
 
 ## RViz teleop interface to the controller. 
 #
@@ -51,42 +50,82 @@ from pr2_controllers_msgs.msg import Pr2GripperCommandGoal, Pr2GripperCommandAct
 class MPCTeleopInteractiveMarkers():
   def __init__(self, opt):
     self.opt = opt
-    base_path = '/haptic_mpc'
+    base_path = 'haptic_mpc'
     control_path = '/control_params'
-    self.orient_weight = rospy.get_param(base_path + control_path + '/orientation_weight')
-    self.pos_weight = rospy.get_param(base_path + control_path + '/position_weight')
+    self.orient_weight = rospy.get_param(base_path + control_path + '/orientation_weight', 0)
+    self.pos_weight = rospy.get_param(base_path + control_path + '/position_weight', 0)
     self.posture_weight = 1.0#rospy.get_param(base_path + control_path + '/posture_weight')    
     self.arm = opt.arm
+    self.init_ee_pose_received = False
+    self.continuous_update = False
+
+  def _updateIKFeasibility(self, ps):
+    p = PoseStamped()
+    p.pose.orientation = ps.pose.orientation
+    p.header.frame_id = '/torso_lift_link'
+    offset = -0.216 #distance from tool frame to wrist_roll_link
+    q = ps.pose.orientation
+    rot = tr.tft.quaternion_matrix((q.x, q.y, q.z, q.w))
+    offset_vec = rot * np.matrix([[offset, 0., 0., 1.]]).T
+    p.pose.position.x = ps.pose.position.x + offset_vec[0]
+    p.pose.position.y = ps.pose.position.y + offset_vec[1]
+    p.pose.position.z = ps.pose.position.z + offset_vec[2]
+    self.test_pos_pub.publish(p)
+
+    req = GetPositionIKRequest()
+    req.timeout = rospy.Duration(5.0)
+    ik_req = PositionIKRequest()
+    ik_req.ik_link_name = self.ik_solver_info.link_names[-1]
+    ik_req.ik_seed_state.joint_state.name = self.ik_solver_info.joint_names
+    ik_req.ik_seed_state.joint_state.position = self.joint_state
+    ik_req.pose_stamped = ps
+    req.ik_request = ik_req
+    ik_sol = self.pr2_ik_client.call(req)
+    if ik_sol.error_code.val < 0:
+      print "IK Failed with error code: %s" %ik_sol.error_code.val
+      for marker in self.wp_im.controls[0].markers:
+        marker.color = ColorRGBA(1,0,0,0.7)
+    else:
+      for marker in self.wp_im.controls[0].markers:
+        marker.color = ColorRGBA(0,1,0,0.7)
+
   ## Callback for the interactive marker location. 
   #
   # Receives and stores the updated pose of the marker in space as the user moves it around.
   def interactiveMarkerLocationCallback(self, feedback):
-#    print "waypoint moved"
     if feedback.event_type == InteractiveMarkerFeedback.MOUSE_UP:
       ps = PoseStamped()
       ps.header.frame_id = feedback.header.frame_id
-
-      pp = feedback.pose.position
-      qq = feedback.pose.orientation
-
-      quat = [qq.x, qq.y, qq.z, qq.w]
-      r = tr.quaternion_to_matrix(quat)
-      offset = np.matrix([0.0, 0., 0.]).T
-      o_torso = r * offset
-
-      ps.pose.position.x = pp.x + o_torso[0,0]
-      ps.pose.position.y = pp.y + o_torso[1,0]
-      ps.pose.position.z = pp.z + o_torso[2,0]
-
-      ps.pose.orientation.x = qq.x
-      ps.pose.orientation.y = qq.y
-      ps.pose.orientation.z = qq.z
-      ps.pose.orientation.w = qq.w
-      
+      ps.pose = feedback.pose
       self.current_goal_pose = ps
-    
-    self.server.applyChanges()
-  
+
+    if self.opt.robot == 'pr2':
+      if feedback.event_type == InteractiveMarkerFeedback.MOUSE_DOWN:
+        for marker in self.wp_im.controls[0].markers:
+          marker.color = ColorRGBA(1,1,1,0.4)
+        self.server.insert(self.wp_im)
+        self.server.applyChanges()
+
+      if feedback.event_type == InteractiveMarkerFeedback.MOUSE_UP:
+        self._updateIKFeasibility(ps)
+        self.server.insert(self.wp_im)
+        self.server.applyChanges()
+
+      if feedback.event_type == InteractiveMarkerFeedback.POSE_UPDATE:
+        if self.continuous_update:
+          ps = PoseStamped()
+          ps.header.frame_id = feedback.header.frame_id
+          ps.pose = feedback.pose
+          self.current_goal_pose = ps
+          #weights_msg = haptic_msgs.HapticMpcWeights()
+          #weights_msg.header.stamp = rospy.Time.now()
+          #weights_msg.position_weight = self.pos_weight
+          #weights_msg.orient_weight = self.orient_weight
+          #self.mpc_weights_pub.publish(weights_msg) # Enable position and orientation tracking
+          self.goal_pos_pub.publish(self.current_goal_pose)
+        self.server.applyChanges()
+
+
   ## Publishes the current pose of the interactive marker as the goal pose for the MPC.
   # Also sets the orientation weight for the controller to 0.0 (ie, position only).
   def goalPositionHandler(self, feedback):
@@ -96,10 +135,10 @@ class MPCTeleopInteractiveMarkers():
     weights_msg.position_weight = self.pos_weight
     weights_msg.orient_weight = 0.0
     weights_msg.posture_weight = 0.0
-    self.mpc_weights_pub.publish(weights_msg) # Enable position tracking only - disable orientation by setting the weight to 0 
+    self.mpc_weights_pub.publish(weights_msg) # Enable position tracking only - disable orientation by setting the weight to 0
     self.goal_pos_pub.publish(self.current_goal_pose)
 #    self.ros_pub.publish('go_to_way_point')
-  
+
   ## Publishes the current pose of the interactive marker as the goal pose for the MPC.
   # Also enables the orientation weight (ie, position and orientation).
   def goalPositionOrientationHandler(self, feedback):
@@ -108,31 +147,31 @@ class MPCTeleopInteractiveMarkers():
     weights_msg.header.stamp = rospy.Time.now()
     weights_msg.position_weight = self.pos_weight
     weights_msg.orient_weight = self.orient_weight
-    self.mpc_weights_pub.publish(weights_msg) # Enable position and orientation tracking 
-    self.goal_pos_pub.publish(self.current_goal_pose)  
+    self.mpc_weights_pub.publish(weights_msg) # Enable position and orientation tracking
+    self.goal_pos_pub.publish(self.current_goal_pose)
  #   self.ros_pub.publish('orient_to_way_point')
-    self.add_topic_pub = rospy.Publisher('/haptic_mpc/add_taxel_array', std_msgs.msg.String)
-    self.remove_topic_pub = rospy.Publisher('/haptic_mpc/remove_taxel_array', std_msgs.msg.String)
-  
+    self.add_topic_pub = rospy.Publisher('haptic_mpc/add_taxel_array', String)
+    self.remove_topic_pub = rospy.Publisher('haptic_mpc/remove_taxel_array', String)
+
   ## Publishes the current pose of the interactive marker as the goal pose for a planner.
-  # The planner should then 
-  def planGoalHandler(self, feedback):  
+  # The planner should then
+  def planGoalHandler(self, feedback):
     rospy.loginfo("MPC Teleop: Publishing new goal to the planner. Swapping to postural control")
     weights_msg = haptic_msgs.HapticMpcWeights()
     weights_msg.header.stamp = rospy.Time.now()
     weights_msg.position_weight = 0.0
     weights_msg.orient_weight = 0.0
     weights_msg.posture_weight = self.posture_weight
-    self.mpc_weights_pub.publish(weights_msg) # Enable posture tracking 
-    self.planner_goal_pub.publish(self.current_goal_pose)  
-  
-  ## Publishes an empty trajectory message. 
+    self.mpc_weights_pub.publish(weights_msg) # Enable posture tracking
+    self.planner_goal_pub.publish(self.current_goal_pose)
+
+  ## Publishes an empty trajectory message.
   # This has the effect of flushing the stored trajectory and goal pose from the waypoint generator, stopping the controller motion.
   def stopArmHandler(self, feedback):
     self.stop_start_epc()
     self.goal_traj_pub.publish(PoseArray())
     rospy.loginfo("Stopping MPC")
-    
+
   ## Enable the PR2 PPS sensors by adding the topics to the skin client.
   def enablePps(self):
     self.add_topic_pub.publish('/pr2_pps_right_sensor/taxels/forces')
@@ -167,54 +206,67 @@ class MPCTeleopInteractiveMarkers():
     self.zero_cody_meka_skin_pub.publish(Empty())
     self.zero_cody_fabric_forearm_pub.publish(Empty())
     self.zero_cody_fabric_wrist_pub.publish(Empty())
-  
+
   def goal_feedback_rviz_cb(self, feedback):
 #    print "goal_feedback_rviz"
     if feedback.event_type == InteractiveMarkerFeedback.MOUSE_UP:
       ps = PoseStamped()
       ps.header.frame_id = feedback.header.frame_id
-
-      pp = feedback.pose.position
-      ps.pose.position.x = pp.x
-      ps.pose.position.y = pp.y
-      ps.pose.position.z = pp.z
-
-      qq = feedback.pose.orientation
-      ps.pose.orientation.x = qq.x
-      ps.pose.orientation.y = qq.y
-      ps.pose.orientation.z = qq.z
-      ps.pose.orientation.w = qq.w
-
+      ps.pose = feedback.pose
       #goal_pos_pub.publish(ps)
-    
     self.server.applyChanges()
-  
+
+  def saveInitEEPose(self, ps_msg):
+    self.init_ee_pose = ps_msg
+    self.init_ee_pose_received = True
+    self.ee_pose_sub.unregister()
+    del(self.ee_pose_sub) 
+
+  def saveJointState(self, jtcs_msg):
+      self.joint_state = jtcs_msg.actual.positions
+
   ## Initialise all publishers/subscribers
   def initComms(self, node_name):
     rospy.init_node(node_name)
-    
+
+    #Initial hand configuration Subscriber
+    self.ee_pose_sub = rospy.Subscriber('haptic_mpc/gripper_pose', PoseStamped, self.saveInitEEPose)
     # Goal pose publisher.
-    self.goal_pos_pub = rospy.Publisher("/haptic_mpc/goal_pose", PoseStamped, latch=True)
-    self.mpc_weights_pub = rospy.Publisher("/haptic_mpc/weights", haptic_msgs.HapticMpcWeights)
-    self.goal_traj_pub = rospy.Publisher("/haptic_mpc/goal_pose_array", PoseArray)
-    self.planner_goal_pub = rospy.Publisher("/haptic_mpc/planner_goal_pose", PoseStamped, latch=True)
+    self.goal_pos_pub = rospy.Publisher("haptic_mpc/goal_pose", PoseStamped, latch=True)
+    self.mpc_weights_pub = rospy.Publisher("haptic_mpc/weights", haptic_msgs.HapticMpcWeights)
+    self.goal_traj_pub = rospy.Publisher("haptic_mpc/goal_pose_array", PoseArray)
+    self.planner_goal_pub = rospy.Publisher("haptic_mpc/planner_goal_pose", PoseStamped, latch=True)
 
-    self.add_topic_pub = rospy.Publisher("/haptic_mpc/add_taxel_array", std_msgs.msg.String)
-    self.remove_topic_pub = rospy.Publisher("/haptic_mpc/remove_taxel_array", std_msgs.msg.String)
+    self.add_topic_pub = rospy.Publisher("haptic_mpc/add_taxel_array", String)
+    self.remove_topic_pub = rospy.Publisher("haptic_mpc/remove_taxel_array", String)
 
+    self.joint_state_sub = rospy.Subscriber("/l_arm_controller/state", JTCS, self.saveJointState)
+    self.test_pos_pub = rospy.Publisher("haptic_mpc/test_pose", PoseStamped, latch=True)
+    if self.opt.robot =='pr2':
+        self.pr2_ik_client = rospy.ServiceProxy("/pr2_left_arm_kinematics/get_ik", GetPositionIK, persistent=True)
+        pr2_ik_info_client = rospy.ServiceProxy("/pr2_left_arm_kinematics/get_ik_solver_info",
+                                                  GetKinematicSolverInfo)
+
+        rospy.loginfo("[mpc_teleop_rviz]: Waiting for PR2_IK_services")
+        try:
+            rospy.wait_for_service("/pr2_left_arm_kinematics/get_ik", timeout=10.)
+            rospy.wait_for_service("/pr2_left_arm_kinematics/get_ik_solver_info", timeout=10.)
+        except ROSException as re:
+            rospy.logwarn("[mpc_teleop_rviz]: Could not find PR2 IK Services before timeout (10s)")
+        self.ik_solver_info = pr2_ik_info_client.call().kinematic_solver_info
 
     # These are deprecated and should be cleaned up.
     #self.wp_pose_pub = rospy.Publisher('/teleop_rviz/command/way_point_pose', PoseStamped)
     #self.ros_pub = rospy.Publisher('/epc_skin/command/behavior', String)
     #self.pause_pub = rospy.Publisher('/epc/pause', Bool)
     #self.stop_pub = rospy.Publisher('/epc/stop', Bool)
-    
+
     self.open_pub = rospy.Publisher('open_gripper', Empty)
     self.close_pub = rospy.Publisher('close_gripper', Empty)
-    
+
     self.disable_pub = rospy.Publisher('/pr2_fabric_gripper_sensor/disable_sensor', Empty)
     self.enable_pub = rospy.Publisher('/pr2_fabric_gripper_sensor/enable_sensor', Empty)
-    
+
     # Zero PR2 fabric skin sensors
     self.zero_gripper_pub = rospy.Publisher('/pr2_fabric_gripper_sensor/zero_sensor', Empty)
     self.zero_gripper_left_link_pub = rospy.Publisher('/pr2_fabric_gripper_left_link_sensor/zero_sensor', Empty)
@@ -229,99 +281,93 @@ class MPCTeleopInteractiveMarkers():
     self.zero_cody_fabric_forearm_pub = rospy.Publisher('/fabric_forearm_sensor/zero_sensor', Empty)
     self.zero_cody_fabric_wrist_pub = rospy.Publisher('/fabric_wrist_sensor/zero_sensor', Empty)
     if self.opt.robot == 'pr2':
+	import actionlib
         self.gripper_action_client = actionlib.SimpleActionClient(self.arm+'_gripper_controller/gripper_action', Pr2GripperCommandAction)
- 
+
     self.server = ims.InteractiveMarkerServer('teleop_rviz_server')
 
   ## Initialise the interactive marker based on what robot we're running on, and whether we use orientation or just position.
   def initMarkers(self):
-    pos = np.matrix([0.,0.,0.]).T
-    ps = PointStamped()
-    ps.header.frame_id = '/torso_lift_link'
+    while not self.init_ee_pose_received and not rospy.is_shutdown():
+      rospy.sleep(1)
+      rospy.loginfo("[mpc_teleops_rviz.py] Waiting for initial end effector pose")
+    ps = self.init_ee_pose
 
     #--- interactive marker for way point ---
     if self.opt.robot == "cody":
-      ps.point.x = 0.4
-      ps.point.y = -0.1
-      ps.point.z = -0.15
       if self.opt.orientation:
         self.wp_im = imu.make_6dof_gripper(False, ps, 0.28, (1., 1., 0.,0.4), "cody")
         #wp_im = imu.make_6dof_marker(False, ps, 0.15, (1., 1., 0.,0.4), 'sphere')
       else:
         self.wp_im = imu.make_3dof_marker_position(ps, 0.15, (1., 1., 0.,0.4), 'sphere')
     elif self.opt.robot == "pr2":
-      ps.point.x = 0.6
-      ps.point.y = -0.1
-      ps.point.z = -0.15
       if self.opt.orientation:
         #wp_im = imu.make_6dof_marker(False, ps, 0.15, (1., 1., 0.,0.4), 'sphere')
         self.wp_im = imu.make_6dof_gripper(False, ps, 0.28, (1., 1., 0.,0.4))
       else:
         self.wp_im = imu.make_3dof_marker_position(ps, 0.15, (1., 1., 0.,0.4), 'sphere')
+    elif self.opt.robot == "darci" or self.opt.robot == "darci_sim":
+      if self.opt.orientation:
+        self.wp_im = imu.make_6dof_gripper(False, ps, 0.28, (1., 1., 0.,0.4), "darci")
+      else:
+        self.wp_im = imu.make_3dof_marker_position(ps, 0.15, (1., 1., 0.,0.4), 'sphere')
     elif self.opt.robot == "sim3":
-      ps.point.x = 0.4
-      ps.point.y = -0.1
-      ps.point.z = 0.15
       self.wp_im = imu.make_marker_position_xy(ps, 0.15, (1., 1., 0.,0.4), 'sphere')
     elif self.opt.robot == "simcody":
-      ps.point.x = 0.4
-      ps.point.y = -0.1
-      ps.point.z = -0.15
       if opt.orientation:
         self.wp_im = imu.make_6dof_gripper(False, ps, 0.28, (1., 1., 0.,0.4), "cody")
         #wp_im = imu.make_6dof_marker(False, ps, 0.15, (1., 1., 0.,0.4), 'sphere')
       else:
         self.wp_im = imu.make_3dof_marker_position(ps, 0.15, (1., 1., 0.,0.4), 'sphere')
-    elif self.opt.robot == "crona": 
+    elif self.opt.robot == "crona":
       #ps.header.frame_id = "/torso_chest_link"
-      ps.header.frame_id = "/base_link" # testing
-      ps.point.x = 0.6
-      ps.point.y = 0.15
-      ps.point.z = 0.5
+#      ps.header.frame_id = "/base_link" # testing
       self.wp_im = imu.make_6dof_marker(False, ps, 0.5, (1., 1., 0.,0.4), 'sphere')
     else:
       rospy.logerr('Please specify a robot type using the input arguments: -r <pr2, sim3, etc>')
       sys.exit()
-  
+
     ps = PoseStamped()
     ps.header = self.wp_im.header
     ps.pose = self.wp_im.pose
     self.current_goal_pose = ps
-     
+
     self.wp_im.name = 'way_point'
     self.wp_im.description = 'Waypoint'
     self.server.insert(self.wp_im, self.interactiveMarkerLocationCallback)
     self.server.applyChanges()
-    
+
    #-------- gripper functions ------------
   def moveGripperPR2(self, dist=0.08, effort = 15):
     self.gripper_action_client.send_goal(Pr2GripperCommandGoal(Pr2GripperCommand(position=dist, max_effort = effort)))
 
   def openGripperPR2(self, dist=0.08):
-    self.move_gripper(dist, -1)
-  
+    self.moveGripperPR2(dist, -1)
+
   def closeGripperPR2(self, dist=0., effort = 15):
-    self.move_gripper(dist, effort) 
-    
-   
-  ## Initialise the menu used to control the arm behaviour.  
+    self.moveGripperPR2(dist, effort)
+
+  def continuousUpdateHandler(self, feedback):
+      self.continuous_update =  not self.continuous_update
+
+  ## Initialise the menu used to control the arm behaviour.
   def initMenu(self):
     self.wp_menu_handler = mh.MenuHandler()
     self.wp_menu_handler.insert('Go', callback = self.goalPositionHandler)
     if self.opt.robot != "sim3": # Sim can't orient in 6DOF as it's a 3DOF planar arm.
       self.wp_menu_handler.insert('Orient', callback = self.goalPositionOrientationHandler)
-      
-    self.wp_menu_handler.insert('Plan to goal', callback = self.planGoalHandler)
+   # self.wp_menu_handler.insert('Plan to goal', callback = self.planGoalHandler)
     if self.opt.robot != "sim3":  # Stop doesn't work for sim - don't use it.
       self.wp_menu_handler.insert('Stop', callback = self.stopArmHandler)
     if self.opt.robot == "pr2": # Gripper commands are specific to the PR2
       self.wp_menu_handler.insert('Open Gripper', callback = self.openGripperHandler)
       self.wp_menu_handler.insert('Close Gripper', callback = self.closeGripperHandler)
+      self.wp_menu_handler.insert('Continuous', callback = self.continuousUpdateHandler)
     if self.opt.robot != "sim3": # Sim doesn't need zeroing ever, doesn't need to be present.
       self.wp_menu_handler.insert('Zero Skin', callback = self.zeroSkinHandler)
-    
+
     imu.add_menu_handler(self.wp_im, self.wp_menu_handler, self.server) 
-  
+
   ## Start the interactive marker server (spin indefinitely).
   def start(self):
     mpc_ims.initComms("mpc_teleop_rviz")
@@ -341,7 +387,3 @@ if __name__ == '__main__':
   # Initialise publishers/subscribers
   mpc_ims = MPCTeleopInteractiveMarkers(opt)
   mpc_ims.start()
-  
-
-
-

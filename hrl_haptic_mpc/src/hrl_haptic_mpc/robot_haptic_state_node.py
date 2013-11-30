@@ -56,7 +56,7 @@ class RobotHapticStateServer():
     self.msg_seq = 0 # Sequence counter
 
     # ROS Param server paths.
-    self.base_path = "/haptic_mpc"
+    self.base_path = "haptic_mpc"
 
     # Skin data
     self.skin_topic_list = [] # List of topic names
@@ -95,30 +95,38 @@ class RobotHapticStateServer():
     self.initRobot(self.opt.robot)
 
   ## Initialise all robot specific parameters (skin topics, robot interfaces, etc). Calls the appropriate init function.
-  def initRobot(self, robot_type="pr2"):
+  def initRobot(self, robot_type="pr2"):    
     if robot_type == "pr2":
       self.initPR2()
     elif robot_type == "cody":
       self.initCody()
     elif robot_type == "cody5dof":
       self.initCody(5)
-    elif robot_type == "sim3" or robot_type == "sim3_nolim":
+    elif robot_type == "sim3" or robot_type == "sim3_nolim" or robot_type == "sim_equal_links_1":
       self.initSim(robot_type)
     elif robot_type == "crona":
       self.initCrona()
+    elif robot_type == "darpa":
+      self.initDarpa()
+    elif robot_type == "kreacher":
+      self.initKreacher()
+    elif robot_type == "darci":
+      self.initDarci()
+    elif robot_type == "darci_sim":
+      self.initDarciSim()
     else:
       rospy.logerr("RobotHapticState: Invalid robot type specified")
       sys.exit()
-
-  ## Initialise parameters for the state publisher when used on the PR2.
-  def initPR2(self):
+      
+  ## Initialise parameters for the state publisher when used on single link Darpa arm
+  def initDarpa(self):
     # Robot kinematic classes and skin clients. These are specific to each robot
-    import urdf_arm_darpa_m3 as urdf_arm
+    import hrl_darpa_arm.darpa_arm_robot_client
 
     #import pr2_arm_darpa_m3_deprecated as pr2_arm # DEPRECATED
 
     # Load parameters from ROS Param server
-    self.robot_path = "/pr2"    
+    self.robot_path = "/darpa"    
     self.skin_topic_list = rospy.get_param(self.base_path +
                                            self.robot_path +
                                            '/skin_list/' + self.opt.sensor)
@@ -128,6 +136,149 @@ class RobotHapticStateServer():
     self.inertial_frame = rospy.get_param(self.base_path +
                                           self.robot_path +
                                           '/inertial_frame')
+    rospy.loginfo("RobotHapticState: Initialising Darpa haptic state publisher" +
+                  "with the following skin topics: \n%s"
+                  %str(self.skin_topic_list))
+    self.skin_client = sc.TaxelArrayClient(self.skin_topic_list,
+                                             self.torso_frame,
+                                             self.tf_listener)
+    self.skin_client.setTrimThreshold(self.trim_threshold)
+    rospy.loginfo("RobotHapticState: Initialising robot interface")
+    
+    # Create the robot object. Provides interfaces to the robot arm and various kinematic functions.
+    self.robot = hrl_darpa_arm.darpa_arm_robot_client.SingleLinkRobotClient()
+
+    self.joint_limits_max = rospy.get_param(self.base_path + 
+                                            self.robot_path + 
+                                            '/joint_limits' +
+                                            '/max')
+    self.joint_limits_min = rospy.get_param(self.base_path + 
+                                            self.robot_path + 
+                                            '/joint_limits' +
+                                            '/min')
+    
+    # Push the arm specific param to the location the controller looks.
+    self.setControllerJointLimits(self.joint_limits_max, self.joint_limits_min)    
+
+  ## Initialise parameters for the state publisher when used on kreacher
+  def initKreacher(self):
+    # Robot kinematic classes and skin clients. These are specific to each robot
+    import hrl_darpa_arm.darpa_arm_robot_client
+
+    #import pr2_arm_darpa_m3_deprecated as pr2_arm # DEPRECATED
+
+    # Load parameters from ROS Param server
+    self.robot_path = "/kreacher"    
+    self.skin_topic_list = rospy.get_param(self.base_path +
+                                           self.robot_path +
+                                           '/skin_list/' + self.opt.sensor)
+    self.torso_frame = rospy.get_param(self.base_path +
+                                       self.robot_path +
+                                       '/torso_frame' )
+    self.inertial_frame = rospy.get_param(self.base_path +
+                                          self.robot_path +
+                                          '/inertial_frame')
+    rospy.loginfo("RobotHapticState: Initialising Darpa haptic state publisher" +
+                  "with the following skin topics: \n%s"
+                  %str(self.skin_topic_list))
+    self.skin_client = sc.TaxelArrayClient(self.skin_topic_list,
+                                             self.torso_frame,
+                                             self.tf_listener)
+    self.skin_client.setTrimThreshold(self.trim_threshold)
+    rospy.loginfo("RobotHapticState: Initialising robot interface")
+    
+    # Create the robot object. Provides interfaces to the robot arm and various kinematic functions.
+    self.robot = hrl_darpa_arm.darpa_arm_robot_client.KreacherRobotClient()
+
+    self.joint_limits_max = rospy.get_param(self.base_path + 
+                                            self.robot_path + 
+                                            '/joint_limits' +
+                                            '/max')
+    self.joint_limits_min = rospy.get_param(self.base_path + 
+                                            self.robot_path + 
+                                            '/joint_limits' +
+                                            '/min')
+    
+    # Push the arm specific param to the location the controller looks.
+    self.setControllerJointLimits(self.joint_limits_max, self.joint_limits_min)    
+      
+
+  def initDarci(self):
+    print "DARCI actual robot not implemented in Quasi-Static MPC"
+    sys.exit(1)
+
+  def initDarciSim(self):
+    # Robot kinematic classes and skin clients. These are specific to each robot
+    import urdf_arm_darpa_m3 as urdf_arm
+
+    # Load parameters from ROS Param server
+    self.robot_path = "/darci_sim"
+    self.skin_topic_list = rospy.get_param(self.base_path +
+                                           self.robot_path +
+                                           '/skin_list/' + self.opt.sensor)
+    self.torso_frame = rospy.get_param(self.base_path +
+                                       self.robot_path +
+                                       '/torso_frame' )
+    self.inertial_frame = rospy.get_param(self.base_path +
+                                          self.robot_path +
+                                          '/inertial_frame')
+    self.end_effector_frame = rospy.get_param(self.base_path +
+                                              self.robot_path +
+                                              '/end_effector_frame')
+    rospy.loginfo("RobotHapticState: Initialising PR2 haptic state publisher" +
+                  "with the following skin topics: \n%s"
+                  %str(self.skin_topic_list))
+    self.skin_client = sc.TaxelArrayClient(self.skin_topic_list,
+                                             self.torso_frame,
+                                             self.tf_listener)
+    self.skin_client.setTrimThreshold(self.trim_threshold)
+    rospy.loginfo("RobotHapticState: Initialising robot interface")
+    if not self.opt.arm:
+      rospy.logerr("RobotHapticState: No arm specified for Darci Sim")
+      sys.exit()
+      
+    # Create the robot object. Provides interfaces to the robot arm and various kinematic functions.
+    self.robot = urdf_arm.URDFArm(self.opt.arm,
+                                  self.tf_listener,
+                                  self.torso_frame,
+                                  self.end_effector_frame)
+
+    # Push joint angles to the param server.
+    if self.opt.arm in ['l', 'r']:
+      arm_path = '/left'
+      if self.opt.arm == 'r':
+        arm_path = '/right'
+
+    self.joint_limits_max = rospy.get_param(self.base_path + 
+                                            self.robot_path + 
+                                            '/joint_limits' +
+                                            arm_path + '/max')
+    self.joint_limits_min = rospy.get_param(self.base_path + 
+                                            self.robot_path + 
+                                            '/joint_limits' +
+                                            arm_path + '/min')
+    
+    # Push the arm specific param to the location the controller looks.
+    self.setControllerJointLimits(self.joint_limits_max, self.joint_limits_min)
+  ## Initialise parameters for the state publisher when used on the PR2.
+  def initPR2(self):
+    # Robot kinematic classes and skin clients. These are specific to each robot
+    import urdf_arm_darpa_m3 as urdf_arm
+
+    # Load parameters from ROS Param server
+    self.robot_path = "/pr2"
+    self.skin_topic_list = rospy.get_param(self.base_path +
+                                           self.robot_path +
+                                           '/skin_list/' + self.opt.sensor)
+    self.torso_frame = rospy.get_param(self.base_path +
+                                       self.robot_path +
+                                       '/torso_frame' )
+    self.inertial_frame = rospy.get_param(self.base_path +
+                                          self.robot_path +
+                                          '/inertial_frame')
+    self.end_effector_frame = rospy.get_param(self.base_path +
+                                              self.robot_path +
+                                              '/end_effector_frame')
     rospy.loginfo("RobotHapticState: Initialising PR2 haptic state publisher" +
                   "with the following skin topics: \n%s"
                   %str(self.skin_topic_list))
@@ -139,9 +290,12 @@ class RobotHapticStateServer():
     if not self.opt.arm:
       rospy.logerr("RobotHapticState: No arm specified for PR2")
       sys.exit()
-    
+      
     # Create the robot object. Provides interfaces to the robot arm and various kinematic functions.
-    self.robot = urdf_arm.URDFArm(self.opt.arm, self.tf_listener)
+    self.robot = urdf_arm.URDFArm(self.opt.arm,
+                                  self.tf_listener,
+                                  self.torso_frame,
+                                  self.end_effector_frame)
 
     # Push joint angles to the param server.
     if self.opt.arm in ['l', 'r']:
@@ -221,10 +375,15 @@ class RobotHapticStateServer():
     # Load the skin list from the param server
     if robot_type == 'sim3':
       import hrl_common_code_darpa_m3.robot_config.three_link_planar_capsule as sim_robot_config
+      self.robot_path = '/sim3'
     elif robot_type == 'sim3_nolim':
       import hrl_common_code_darpa_m3.robot_config.three_link_planar_capsule_nolim as sim_robot_config
+      self.robot_path = '/sim3'
+    elif robot_type == 'sim_equal_links_1':
+      import hrl_common_code_darpa_m3.robot_config.multi_link_one_planar as sim_robot_config
+      self.robot_path = '/sim_equal_links_1'
 
-    self.robot_path = '/sim3'
+
       
     self.skin_topic_list = rospy.get_param(self.base_path +
                                            self.robot_path +
@@ -296,15 +455,20 @@ class RobotHapticStateServer():
     import urdf_arm_darpa_m3 as urdf_arm
 
     self.robot_path = "/crona"
-    self.skin_topic_list = rospy.get_param(self.base_path +
-                                           self.robot_path +
-                                           '/skin_list/' + self.opt.sensor)
+    #self.skin_topic_list = rospy.get_param(self.base_path +
+    #                                       self.robot_path +
+    #                                       '/skin_list/' + self.opt.sensor)
+    self.skin_topic_list = None
     self.torso_frame = rospy.get_param(self.base_path +
                                        self.robot_path +
                                        '/torso_frame' )
+    self.end_effector_frame = rospy.get_param(self.base_path +
+                                       self.robot_path +
+                                       '/end_effector_frame' )
     self.inertial_frame = rospy.get_param(self.base_path +
                                           self.robot_path +
                                           '/inertial_frame')
+
     self.skin_client = sc.TaxelArrayClient([],
                                              self.torso_frame,
                                              self.tf_listener)
@@ -315,7 +479,10 @@ class RobotHapticStateServer():
     if not self.opt.arm:
       rospy.logerr("RobotHapticState: No arm specified for CRONA")
       sys.exit()
-    self.robot = urdf_arm.URDFArm(self.opt.arm, self.tf_listener, base_link=self.torso_frame, end_link=self.opt.arm+'_hand_link')
+    self.robot = urdf_arm.URDFArm(self.opt.arm,
+                                  self.tf_listener,
+                                  base_link=self.torso_frame,
+                                  end_link=self.end_effector_frame)
     self.skins = []
     self.Jc = []
 
@@ -345,9 +512,9 @@ class RobotHapticStateServer():
     if self.node_name != None:
       rospy.init_node(self.node_name)
     self.tf_listener = TransformListener()
-    self.state_pub = rospy.Publisher('/haptic_mpc/robot_state',
+    self.state_pub = rospy.Publisher('haptic_mpc/robot_state',
                                      haptic_msgs.RobotHapticState)
-    self.gripper_pose_pub = rospy.Publisher('/haptic_mpc/gripper_pose',
+    self.gripper_pose_pub = rospy.Publisher('haptic_mpc/gripper_pose',
                                             geom_msgs.PoseStamped)
 
   ## Pushes the given joint limits to a known location on the param server. 
@@ -369,6 +536,8 @@ class RobotHapticStateServer():
   # and end effector position
   def updateEndEffectorJacobian(self):
     self.Je = [self.robot.kinematics.jacobian(self.joint_angles, self.end_effector_position)]
+    #pos = self.robot.kinematics.forward(self.joint_angles,end_link=self.opt.arm+'_forearm_roll_link')
+    #self.Je = [self.robot.kinematics.jacobian(self.joint_angles, pos[:3,3])]
 
   ## Compute contact Jacobians based on the provided taxel array dictionary
   # @param skin_data Dictionary containing taxel array messages indexed by topic name
@@ -491,11 +660,13 @@ class RobotHapticStateServer():
     # Skin sensor calculations.
     # Get the latest skin data from the skin client
     skin_data = self.skin_client.getTrimmedSkinData()
+    full_skin_data = self.skin_client.getSkinData()
     # Trim skin_data based on specific robot state (eg wrist configuration).
     skin_data = self.modifyRobotSpecificTaxels(skin_data)
     self.updateContactJacobians(skin_data)
     # Add the list of  TaxelArray messages to the message
     self.skins = skin_data.values()
+    self.full_skins = full_skin_data.values()
     
   ## Build the haptic state message data structure
   # @return haptic_state_msg Haptic State message object containing relevant data 
@@ -587,7 +758,8 @@ class RobotHapticStateServer():
 
     rospy.loginfo("RobotHapticState: Got robot state")
 
-    if self.robot.get_ep() == None:
+    while self.robot.get_ep() == None:
+      rospy.sleep(0.001)
       rospy.loginfo("RobotHapticState: Setting desired joint angles to current joint_angles")
       self.robot.set_ep(self.robot.get_joint_angles())
 

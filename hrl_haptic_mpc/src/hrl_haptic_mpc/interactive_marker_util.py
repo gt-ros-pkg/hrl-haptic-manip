@@ -41,7 +41,8 @@ roslib.load_manifest('hrl_lib')
 from hrl_lib import transforms as tr
 
 from visualization_msgs.msg import Marker, InteractiveMarker, InteractiveMarkerControl
-
+from geometry_msgs.msg import Quaternion, Point, Vector3
+from std_msgs.msg import ColorRGBA
 
 # scale - float
 # color - (r,g,b,a)
@@ -55,18 +56,14 @@ def make_marker(scale, color, mtype):
     elif mtype == 'sphere':
         marker.type = Marker.SPHERE
     elif mtype == 'cylinder':
-        marker.type = Marker.CYLINDER        
+        marker.type = Marker.CYLINDER
     else:
         raise RuntimeError('Undefined marker type')
 
-    marker.scale.x = ss * scale
-    marker.scale.y = ss * scale
-    marker.scale.z = ss * scale
+    scale = ss * scale
+    marker.scale = Vector3(scale, scale, scale)
 
-    marker.color.r = color[0]
-    marker.color.g = color[1]
-    marker.color.b = color[2]
-    marker.color.a = color[3]
+    marker.color = ColorRGBA(*color)
     return marker
 
 def make_3dof_marker_position(ps, scale, color, mtype):
@@ -86,13 +83,8 @@ def make_cody_ee_marker(ps, color, orientation = None,
     mesh = Marker()
     mesh.ns = ns
     #mesh.mesh_use_embedded_materials = True
-    mesh.scale.x = 1.0
-    mesh.scale.y = 1.0
-    mesh.scale.z = 1.0
-    mesh.color.r = color[0]
-    mesh.color.g = color[1]
-    mesh.color.b = color[2]
-    mesh.color.a = color[3]
+    mesh.scale = Vector3(1.,1.,1.)
+    mesh.color = ColorRGBA(*color)
 
     # stub_end_effector.dae
     # stub_end_effector_mini45.dae
@@ -108,18 +100,13 @@ def make_cody_ee_marker(ps, color, orientation = None,
 
     rot_buf = tr.quaternion_to_matrix(orientation)
     orientation = tr.matrix_to_quaternion(rot_buf*rot_default)
-    mesh.pose.orientation.x = orientation[0]
-    mesh.pose.orientation.y = orientation[1]
-    mesh.pose.orientation.z = orientation[2]
-    mesh.pose.orientation.w = orientation[3]
+    mesh.pose.orientation = Quaternion(*orientation)
 
     mesh.pose.position.z = offset
     if control != None:
         control.markers.append( mesh )
     elif marker_array != None:
-        mesh.pose.position.x = ps.point.x
-        mesh.pose.position.y = ps.point.y
-        mesh.pose.position.z = ps.point.z
+        mesh.pose.position = ps.pose.position
         mesh.header.frame_id = ps.header.frame_id
         mesh.id = mesh_id
         marker_array.markers.append(mesh)
@@ -130,39 +117,73 @@ def make_cody_ee_marker(ps, color, orientation = None,
     elif marker_array != None:
         return marker_array
 
-
-def make_pr2_gripper_marker(ps, color, orientation = None,
+def make_darci_ee_marker(ps, color, orientation = None,
                             marker_array=None, control=None, 
-                            mesh_id_start = 0, ns = "pr2_gripper",
-                            offset=-0.17):
+                            mesh_id_start = 0, ns = "darci_ee",
+                            offset=-0.14):
     mesh_id = mesh_id_start
     # this is the palm piece
     mesh = Marker()
     mesh.ns = ns
     #mesh.mesh_use_embedded_materials = True
-    mesh.scale.x = 1.0
-    mesh.scale.y = 1.0
-    mesh.scale.z = 1.0
-    mesh.color.r = color[0]
-    mesh.color.g = color[1]
-    mesh.color.b = color[2]
-    mesh.color.a = color[3]
-    mesh.mesh_resource = "package://pr2_description/meshes/gripper_v0/gripper_palm.dae"
+    mesh.scale = Vector3(1.,1.,1.)
+    mesh.color = ColorRGBA(*color)
+
+    # stub_end_effector.dae
+    # stub_end_effector_mini45.dae
+    # tube_with_ati_collisions.dae
+    # wedge_blender.dae
+#    mesh.mesh_resource = "package://hrl_dynamic_mpc/tube_with_ati_collisions.dae"
+    mesh.mesh_resource = "package://hrl_gazebo_darci/urdf/meshes/mid_res/tactile_sensor/Darci_Flipper.stl"
     mesh.type = Marker.MESH_RESOURCE
-    if orientation != None:
-        mesh.pose.orientation.x = orientation[0]
-        mesh.pose.orientation.y = orientation[1]
-        mesh.pose.orientation.z = orientation[2]
-        mesh.pose.orientation.w = orientation[3]
-    else:
-        mesh.pose.orientation.w = 1
+
+    #rot_default = tr.Ry(np.radians(-90))*tr.Rz(np.radians(90))
+    rot_default = tr.Ry(np.radians(0))*tr.Rz(np.radians(90))
+
+    if orientation == None:
+        orientation = [0, 0, 0, 1]
+
+    rot_buf = tr.quaternion_to_matrix(orientation)
+    orientation = tr.matrix_to_quaternion(rot_buf*rot_default)
+    mesh.pose.orientation = Quaternion(*orientation)
+
     mesh.pose.position.x = offset
     if control != None:
         control.markers.append( mesh )
     elif marker_array != None:
-        mesh.pose.position.x = ps.point.x
-        mesh.pose.position.y = ps.point.y
-        mesh.pose.position.z = ps.point.z
+        mesh.pose.position = ps.pose.position
+        mesh.header.frame_id = ps.header.frame_id
+        mesh.id = mesh_id
+        marker_array.markers.append(mesh)
+
+    if control != None:
+        control.interaction_mode = InteractiveMarkerControl.BUTTON
+        return control
+    elif marker_array != None:
+        return marker_array
+
+def make_pr2_gripper_marker(ps, color, orientation = None,
+                            marker_array=None, control=None, 
+                            mesh_id_start = 0, ns = "pr2_gripper",
+                            offset=-0.19):
+    mesh_id = mesh_id_start
+    # this is the palm piece
+    mesh = Marker()
+    mesh.ns = ns
+    #mesh.mesh_use_embedded_materials = True
+    mesh.scale = Vector3(1.,1.,1.)
+    mesh.color = ColorRGBA(*color)
+    mesh.mesh_resource = "package://pr2_description/meshes/gripper_v0/gripper_palm.dae"
+    mesh.type = Marker.MESH_RESOURCE
+    if orientation != None:
+        mesh.pose.orientation = Quaternion(*orientation)
+    else:
+        mesh.pose.orientation = Quaternion(0,0,0,1)
+    mesh.pose.position.x = offset
+    if control != None:
+        control.markers.append( mesh )
+    elif marker_array != None:
+        mesh.pose.position = ps.pose.position
         mesh.header.frame_id = ps.header.frame_id
         mesh.id = mesh_id
         mesh_id = mesh_id+1
@@ -199,22 +220,12 @@ def make_pr2_gripper_marker(ps, color, orientation = None,
     mesh = Marker()
     mesh.ns = ns
     #mesh.mesh_use_embedded_materials = True
-    mesh.scale.x = 1.0
-    mesh.scale.y = 1.0
-    mesh.scale.z = 1.0
+    mesh.scale = Vector3(1.,1.,1.)
     mesh.mesh_resource = "package://pr2_description/meshes/gripper_v0/l_finger.dae"
-    mesh.color.r = color[0]
-    mesh.color.g = color[1]
-    mesh.color.b = color[2]
-    mesh.color.a = color[3]
+    mesh.color = ColorRGBA(*color)
     mesh.type = Marker.MESH_RESOURCE
-    mesh.pose.orientation.x = finger_rot[0] 
-    mesh.pose.orientation.y = finger_rot[1] 
-    mesh.pose.orientation.z = finger_rot[2] 
-    mesh.pose.orientation.w = finger_rot[3]
-    mesh.pose.position.x = finger_pos[0] 
-    mesh.pose.position.y = finger_pos[1] 
-    mesh.pose.position.z = finger_pos[2] 
+    mesh.pose.orientation = Quaternion(*finger_rot)
+    mesh.pose.position = Point(*finger_pos)
     if control != None:
         control.markers.append( mesh )
     elif marker_array != None:
@@ -226,22 +237,12 @@ def make_pr2_gripper_marker(ps, color, orientation = None,
     mesh = Marker()
     mesh.ns = ns
     #mesh.mesh_use_embedded_materials = True
-    mesh.scale.x = 1.0
-    mesh.scale.y = 1.0
-    mesh.scale.z = 1.0
-    mesh.color.r = color[0]
-    mesh.color.g = color[1]
-    mesh.color.b = color[2]
-    mesh.color.a = color[3]
+    mesh.scale = Vector3(1.,1.,1.)
+    mesh.color = ColorRGBA(*color)
     mesh.mesh_resource = "package://pr2_description/meshes/gripper_v0/l_finger_tip.dae"
     mesh.type = Marker.MESH_RESOURCE
-    mesh.pose.orientation.x = tip_rot[0] 
-    mesh.pose.orientation.y = tip_rot[1] 
-    mesh.pose.orientation.z = tip_rot[2] 
-    mesh.pose.orientation.w = tip_rot[3]
-    mesh.pose.position.x = tip_pos[0] 
-    mesh.pose.position.y = tip_pos[1] 
-    mesh.pose.position.z = tip_pos[2] 
+    mesh.pose.orientation = Quaternion(*tip_rot)
+    mesh.pose.position = Point(*tip_pos)
     if control != None:
         control.markers.append( mesh )
     elif marker_array != None:
@@ -255,7 +256,7 @@ def make_pr2_gripper_marker(ps, color, orientation = None,
     T1 = tr.composeHomogeneousTransform(rot1, [0.07691, -0.01, 0.])
     rot2 = tr.rot_angle_direction(-1*angle_open, np.matrix([0, 0, 1]))
     T2 = tr.composeHomogeneousTransform(rot2, [0.09137, 0.00495, 0.])
-    
+
     T_proximal = T0*T1
     T_distal = T0*T1*T2
 
@@ -269,22 +270,12 @@ def make_pr2_gripper_marker(ps, color, orientation = None,
     mesh = Marker()
     mesh.ns = ns
     #mesh.mesh_use_embedded_materials = True
-    mesh.scale.x = 1.0
-    mesh.scale.y = 1.0
-    mesh.scale.z = 1.0
-    mesh.color.r = color[0]
-    mesh.color.g = color[1]
-    mesh.color.b = color[2]
-    mesh.color.a = color[3]
+    mesh.scale = Vector3(1.,1.,1.)
+    mesh.color = ColorRGBA(*color)
     mesh.mesh_resource = "package://pr2_description/meshes/gripper_v0/l_finger.dae"
     mesh.type = Marker.MESH_RESOURCE
-    mesh.pose.orientation.x = finger_rot[0] 
-    mesh.pose.orientation.y = finger_rot[1] 
-    mesh.pose.orientation.z = finger_rot[2] 
-    mesh.pose.orientation.w = finger_rot[3]
-    mesh.pose.position.x = finger_pos[0] 
-    mesh.pose.position.y = finger_pos[1] 
-    mesh.pose.position.z = finger_pos[2] 
+    mesh.pose.orientation = Quaternion(*finger_rot)
+    mesh.pose.position = Point(*finger_pos)
     if control != None:
         control.markers.append( mesh )
     elif marker_array != None:
@@ -296,22 +287,12 @@ def make_pr2_gripper_marker(ps, color, orientation = None,
     mesh = Marker()
     mesh.ns = ns
     #mesh.mesh_use_embedded_materials = True
-    mesh.scale.x = 1.0
-    mesh.scale.y = 1.0
-    mesh.scale.z = 1.0
-    mesh.color.r = color[0]
-    mesh.color.g = color[1]
-    mesh.color.b = color[2]
-    mesh.color.a = color[3]
+    mesh.scale = Vector3(1.,1.,1.)
+    mesh.color = ColorRGBA(*color)
     mesh.mesh_resource = "package://pr2_description/meshes/gripper_v0/l_finger_tip.dae"
     mesh.type = Marker.MESH_RESOURCE
-    mesh.pose.orientation.x = tip_rot[0] 
-    mesh.pose.orientation.y = tip_rot[1] 
-    mesh.pose.orientation.z = tip_rot[2] 
-    mesh.pose.orientation.w = tip_rot[3]
-    mesh.pose.position.x = tip_pos[0] 
-    mesh.pose.position.y = tip_pos[1] 
-    mesh.pose.position.z = tip_pos[2] 
+    mesh.pose.orientation = Quaternion(*tip_rot)
+    mesh.pose.position = Point(*tip_pos)
     if control != None:
         control.markers.append( mesh )
     elif marker_array != None:
@@ -331,29 +312,28 @@ def make_6dof_gripper(fixed, ps, scale, color, robot_type = "pr2",
                       ignore_y=False, ignore_z=False):
     int_marker = InteractiveMarker()
     int_marker.header.frame_id = ps.header.frame_id
-    int_marker.pose.position.x = ps.point.x
-    int_marker.pose.position.y = ps.point.y
-    int_marker.pose.position.z = ps.point.z
+    int_marker.pose = ps.pose
     int_marker.scale = scale
 
     int_marker.name = 'gripper_6dof'
 
     control =  InteractiveMarkerControl()
     control.always_visible = True
+    control.name = 'pr2_gripper_control'
     if robot_type == "pr2":
         control = make_pr2_gripper_marker(ps, [0.3, 0.3, 0.3, 0.7], control=control) 
         int_marker.description = 'pr2_gripper_control'
     elif robot_type == "cody":
         control = make_cody_ee_marker(ps, [1, 1, 1, 0.4], control=control) 
         int_marker.description = 'cody_ee_control'
+    elif robot_type == "darci":
+        control = make_darci_ee_marker(ps, [1, 1, 1, 0.4], control=control) 
+        int_marker.description = 'darci_ee_control'
     int_marker.controls.append( control )
 
     if not ignore_x:
         control = InteractiveMarkerControl()
-        control.orientation.x = 1
-        control.orientation.y = 0
-        control.orientation.z = 0
-        control.orientation.w = 1
+        control.orientation = Quaternion(1,0,0,1)
         control.name = 'move_x'
         control.interaction_mode = InteractiveMarkerControl.MOVE_AXIS
         if fixed:
@@ -362,10 +342,7 @@ def make_6dof_gripper(fixed, ps, scale, color, robot_type = "pr2",
 
     if not ignore_y:
         control = InteractiveMarkerControl()
-        control.orientation.x = 0
-        control.orientation.y = 0
-        control.orientation.z = 1
-        control.orientation.w = 1
+        control.orientation = Quaternion(0,0,1,1)
         control.name = 'move_y'
         control.interaction_mode = InteractiveMarkerControl.MOVE_AXIS
         if fixed:
@@ -374,10 +351,7 @@ def make_6dof_gripper(fixed, ps, scale, color, robot_type = "pr2",
 
     if not ignore_z:
         control = InteractiveMarkerControl()
-        control.orientation.x = 0
-        control.orientation.y = 1
-        control.orientation.z = 0
-        control.orientation.w = 1
+        control.orientation = Quaternion(0,1,0,1)
         control.name = 'move_z'
         control.interaction_mode = InteractiveMarkerControl.MOVE_AXIS
         if fixed:
@@ -386,10 +360,7 @@ def make_6dof_gripper(fixed, ps, scale, color, robot_type = "pr2",
 
     if not ignore_rotation:
         control = InteractiveMarkerControl()
-        control.orientation.x = 1
-        control.orientation.y = 0
-        control.orientation.z = 0
-        control.orientation.w = 1
+        control.orientation = Quaternion(1,0,0,1)
         control.name = 'rotate_x'
         control.interaction_mode = InteractiveMarkerControl.ROTATE_AXIS
         if fixed:
@@ -397,10 +368,7 @@ def make_6dof_gripper(fixed, ps, scale, color, robot_type = "pr2",
         int_marker.controls.append(control)
 
         control = InteractiveMarkerControl()
-        control.orientation.x = 0
-        control.orientation.y = 0
-        control.orientation.z = 1
-        control.orientation.w = 1
+        control.orientation = Quaternion(0,0,1,1)
         control.name = 'rotate_y'
         control.interaction_mode = InteractiveMarkerControl.ROTATE_AXIS
         if fixed:
@@ -408,10 +376,7 @@ def make_6dof_gripper(fixed, ps, scale, color, robot_type = "pr2",
         int_marker.controls.append(control)
 
         control = InteractiveMarkerControl()
-        control.orientation.x = 0
-        control.orientation.y = 1
-        control.orientation.z = 0
-        control.orientation.w = 1
+        control.orientation = Quaternion(0,1,0,1)
         control.name = 'rotate_z'
         control.interaction_mode = InteractiveMarkerControl.ROTATE_AXIS
         if fixed:
@@ -419,8 +384,6 @@ def make_6dof_gripper(fixed, ps, scale, color, robot_type = "pr2",
         int_marker.controls.append(control)
 
     return int_marker
-    
-
 
 # initial_position - 3x1 np matrix
 # pose - geometry_msgs/PointStamped
@@ -434,9 +397,7 @@ def make_marker_flexible(fixed, ps, scale, color, mtype,
                          ignore_y=False, ignore_z=False):
     int_marker = InteractiveMarker()
     int_marker.header.frame_id = ps.header.frame_id
-    int_marker.pose.position.x = ps.point.x
-    int_marker.pose.position.y = ps.point.y
-    int_marker.pose.position.z = ps.point.z
+    int_marker.pose = ps.pose
     int_marker.scale = scale
 
     int_marker.name = 'simple_6dof'
@@ -454,10 +415,7 @@ def make_marker_flexible(fixed, ps, scale, color, mtype,
 
     if not ignore_x:
         control = InteractiveMarkerControl()
-        control.orientation.x = 1
-        control.orientation.y = 0
-        control.orientation.z = 0
-        control.orientation.w = 1
+        control.orientation = Quaternion(1,0,0,1)
         control.name = 'move_x'
         control.interaction_mode = InteractiveMarkerControl.MOVE_AXIS
         if fixed:
@@ -466,10 +424,7 @@ def make_marker_flexible(fixed, ps, scale, color, mtype,
 
     if not ignore_y:
         control = InteractiveMarkerControl()
-        control.orientation.x = 0
-        control.orientation.y = 0
-        control.orientation.z = 1
-        control.orientation.w = 1
+        control.orientation = Quaternion(0,0,1,1)
         control.name = 'move_y'
         control.interaction_mode = InteractiveMarkerControl.MOVE_AXIS
         if fixed:
@@ -478,10 +433,7 @@ def make_marker_flexible(fixed, ps, scale, color, mtype,
 
     if not ignore_z:
         control = InteractiveMarkerControl()
-        control.orientation.x = 0
-        control.orientation.y = 1
-        control.orientation.z = 0
-        control.orientation.w = 1
+        control.orientation = Quaternion(0,1,0,1)
         control.name = 'move_z'
         control.interaction_mode = InteractiveMarkerControl.MOVE_AXIS
         if fixed:
@@ -490,10 +442,7 @@ def make_marker_flexible(fixed, ps, scale, color, mtype,
 
     if not ignore_rotation:
         control = InteractiveMarkerControl()
-        control.orientation.x = 1
-        control.orientation.y = 0
-        control.orientation.z = 0
-        control.orientation.w = 1
+        control.orientation = Quaternion(1,0,0,1)
         control.name = 'rotate_x'
         control.interaction_mode = InteractiveMarkerControl.ROTATE_AXIS
         if fixed:
@@ -501,10 +450,7 @@ def make_marker_flexible(fixed, ps, scale, color, mtype,
         int_marker.controls.append(control)
 
         control = InteractiveMarkerControl()
-        control.orientation.x = 0
-        control.orientation.y = 0
-        control.orientation.z = 1
-        control.orientation.w = 1
+        control.orientation = Quaternion(0,0,1,1)
         control.name = 'rotate_y'
         control.interaction_mode = InteractiveMarkerControl.ROTATE_AXIS
         if fixed:
@@ -512,10 +458,7 @@ def make_marker_flexible(fixed, ps, scale, color, mtype,
         int_marker.controls.append(control)
 
         control = InteractiveMarkerControl()
-        control.orientation.x = 0
-        control.orientation.y = 1
-        control.orientation.z = 0
-        control.orientation.w = 1
+        control.orientation = Quaternion(0,1,0,1)
         control.name = 'rotate_z'
         control.interaction_mode = InteractiveMarkerControl.ROTATE_AXIS
         if fixed:
@@ -523,7 +466,6 @@ def make_marker_flexible(fixed, ps, scale, color, mtype,
         int_marker.controls.append(control)
 
     return int_marker
-
 
 # add this menu handler to the Interactive Marker.
 # server - InteractiveMarkerServer
@@ -535,6 +477,3 @@ def add_menu_handler(int_marker, menu_handler, server):
     int_marker.controls.append(control)
     menu_handler.apply(server, int_marker.name)
     server.applyChanges()
-
-
-

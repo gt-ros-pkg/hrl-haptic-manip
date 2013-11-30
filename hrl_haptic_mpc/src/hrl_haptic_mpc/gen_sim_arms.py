@@ -104,16 +104,18 @@ class ODESimArm(HRLArm):
 
     def set_delta_ep_ros(self, msg, duration=0.15):
         delta_jep = copy.copy(msg.data)
-        if delta_jep is None or len(delta_jep) != 3:
+        if delta_jep is None or len(delta_jep) != len(self.q):
             raise RuntimeError("set_jep value is " + str(delta_jep))
         
         with self.lock:
           if self.ep == None:
             self.ep = self.get_joint_angles()
             
-          jep = (np.array(self.ep) + np.array(delta_jep)).tolist()
+          #jep = (np.array(self.ep) + np.array(delta_jep)).tolist()
+          self.ep = (np.array(self.ep) + np.array(delta_jep)).tolist()
           
-          f = FloatArrayBare(jep)
+          #f = FloatArrayBare(jep)
+          f = FloatArrayBare(self.ep)
           self.jep_pub.publish(f)
           self.publish_rviz_markers()
 

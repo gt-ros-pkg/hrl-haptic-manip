@@ -41,59 +41,45 @@ class URDFArm(HRLArm):
     def __init__(self, arm, tf_listener=None, base_link=None, end_link=None):
         if not arm in ['l', 'r']:
             raise Exception, 'Arm should be "l" or "r"'
-        
+
         if base_link is None:
-            self.base_link = '/torso_lift_link'
-        else: 
+            rospy.logerr("[URDFArm] Must specify manipulator base link")
+            sys.exit(1)
+        else:
             self.base_link = base_link
-            
+
         if end_link is None:
-            self.end_link = arm + '_gripper_tool_frame'
-        else:        
+            rospy.logerr("[URDFArm] Must specify manipulator end link")
+            sys.exit(1)
+        else:
             self.end_link = end_link
-            
+
         kinematics = create_kdl_kin(self.base_link, self.end_link)
         HRLArm.__init__(self, kinematics)
         self.joint_names_list = kinematics.get_joint_names()
-        self.torso_position = None
         self.arm_efforts = None
         self.delta_jep = None
-            
-        try:
-            if len(self.joint_names_list) == 9:
-                self.kp = [rospy.get_param('crona_torso_traj_controller/gains/'+nm+'/p') for nm in self.joint_names_list[:3]]
-                self.kp += [rospy.get_param(arm+'_arm_controller/gains/'+nm+'/p') for nm in self.joint_names_list[3:]] # crona testing
-            else:
-                self.kp = [rospy.get_param(arm+'_arm_controller/gains/'+nm+'/p') for nm in self.joint_names_list]
-        except:
-            print "kp is not on param server ... exiting"
-            assert(False)
-    #        max_kp =  np.max(self.kp)
-
-        if len(self.joint_names_list) == 9: # quick hack to change "weighting" on joints by changing the interpreted stiffness values
-            self.kp = [100. for i in range(3)]
-            self.kp += [50. for i in [3,4,5,6,7,8]] 
-        else:
-            self.kp = [50. for i in range(len(self.joint_names_list))]
 
         try:
-            if len(self.joint_names_list) == 9:
-                self.kd = [rospy.get_param('crona_torso_traj_controller/gains/'+nm+'/d') for nm in self.joint_names_list[:3]]
-                self.kd += [rospy.get_param(arm+'_arm_controller/gains/'+nm+'/d') for nm in self.joint_names_list[3:]] # crona testing
-            else:
-                self.kd = [rospy.get_param(arm+'_arm_controller/gains/'+nm+'/d') for nm in self.joint_names_list]
+            self.kp = [rospy.get_param('/'+arm+'_arm_controller/gains/'+nm+'/p') for nm in self.joint_names_list]
         except:
-            print "kd is not on param server ... exiting"
-            assert(False)
-            
+            rospy.logerr("kp is not on param server. Exiting...")
+            sys.exit(1)
+
+        try:
+            self.kd = [rospy.get_param('/'+arm+'_arm_controller/gains/'+nm+'/d') for nm in self.joint_names_list]
+        except:
+            rospy.logerr("kd is not on param server. Exiting...")
+            sys.exit(1)
+
         rospy.Subscriber('/joint_states', JointState, self.joint_states_cb)
 
         # Set desired joint angle - either through a delta from the current position, or as an absolute value.
-        rospy.Subscriber ("/haptic_mpc/q_des", FloatArrayBare, self.set_ep_callback)
-        rospy.Subscriber ("/haptic_mpc/delta_q_des", FloatArrayBare, self.set_delta_ep_callback)
+        rospy.Subscriber ("haptic_mpc/q_des", FloatArrayBare, self.set_ep_callback)
+        rospy.Subscriber ("haptic_mpc/delta_q_des", FloatArrayBare, self.set_delta_ep_callback)
         #rospy.Subscriber("/delta_jep_mpc_cvxgen", FloatArrayBare, self.set_ep_callback)
 
-        self.marker_pub = rospy.Publisher(arm+'_arm/viz/markers', Marker)
+        self.marker_pub = rospy.Publisher('/'+arm+'_arm/viz/markers', Marker)
         self.cep_marker_id = 1
 
         try:
@@ -105,10 +91,8 @@ class URDFArm(HRLArm):
           rospy.loginfo("ServiceException caught while instantiating a TF listener. This seems to be normal.")
           pass
 
-        self.joint_angles_pub = rospy.Publisher(arm+'_arm_controller/command',
+        self.joint_angles_pub = rospy.Publisher('/'+arm+'_arm_controller/command',
                                                 JointTrajectory)
-        if len(self.joint_names_list) == 9:
-            self.torso_ja_pub = rospy.Publisher('/crona_torso_traj_controller/command',JointTrajectory) # crona testing
     ##
     # Callback for /joint_states topic. Updates current joint
     # angles and efforts for the arms constantly
@@ -132,98 +116,31 @@ class URDFArm(HRLArm):
             self.q = arm_angles
             self.arm_efforts = arm_efforts
             self.qdot = arm_vel
-            
-            if self.base_link == 'torso_chest_link': # if/else statement is here because self.base_link is 'torso_chest_link and not 'torso_chest_joint'
-                torso_idx = data.name.index('torso_chest_joint')
-            elif self.base_link == 'base_link':
-                torso_idx = data.name.index('base_rev_joint') # crona testing
-            elif self.base_link == 'torso_lift_link':
-                torso_idx = data.name.index('torso_lift_joint')
-            else:
-                torso_idx = data.name.index('torso_lift_joint')            
-                #torso_idx = data.name.index(self.base_link)
-                
-            self.torso_position = data.position[torso_idx]
 
     def set_ep(self, jep, duration=0.15):
         jep = copy.copy(jep)
-        if jep is None or len(jep) != len(self.joint_names_list):
+        if (jep is None) or (len(jep) != len(self.joint_names_list)):
             raise RuntimeError("set_jep value is " + str(jep))
-
         with self.lock:
-            if len(self.joint_names_list) == 9: 
-                arm_trajectory = JointTrajectory()
-                arm_trajectory.joint_names = self.joint_names_list[3:]
-                jtp = JointTrajectoryPoint()
-                jtp.positions = jep[3:]
-                jtp.time_from_start = rospy.Duration(duration)
-                arm_trajectory.points.append(jtp)
-                self.joint_angles_pub.publish(arm_trajectory)
-
-                torso_trajectory = JointTrajectory()
-                torso_trajectory.joint_names = self.joint_names_list[:3]
-                jtp = JointTrajectoryPoint()
-                jtp.positions = jep[:3]
-                jtp.time_from_start = rospy.Duration(duration)
-                torso_trajectory.points.append(jtp)
-                self.torso_ja_pub.publish(torso_trajectory)
-
-                self.ep = jep
-            else:
-                trajectory = JointTrajectory()
-                trajectory.joint_names = self.joint_names_list
-                jtp = JointTrajectoryPoint()
-                jtp.positions = jep
-                jtp.time_from_start = rospy.Duration(duration)
-                trajectory.points.append(jtp)
-                self.joint_angles_pub.publish(trajectory)
-                self.ep = jep
+            trajectory = JointTrajectory()
+            trajectory.joint_names = self.joint_names_list
+            jtp = JointTrajectoryPoint()
+            jtp.positions = jep
+            jtp.time_from_start = rospy.Duration(duration)
+            trajectory.points.append(jtp)
+            self.joint_angles_pub.publish(trajectory)
+            self.ep = jep
 
     def set_delta_ep_callback(self, msg):
         delta_jep = msg.data
-        
         if self.ep == None:
             self.ep = self.get_joint_angles()
         des_jep = (np.array(self.ep) + np.array(delta_jep)).tolist()
-        
         self.set_ep(des_jep)
-        
-#        delta_jep = copy.copy(msg.data)
-#        if delta_jep is None or len(delta_jep) != len(self.joint_names_list):
-#            raise RuntimeError("set_jep value is " + str(delta_jep))
-#
-#        with self.lock:
-#            if self.ep == None:
-#              self.ep = self.get_joint_angles()
-#            jep = (np.array(self.ep) + np.array(delta_jep)).tolist()
-#            trajectory = JointTrajectory()
-#            trajectory.joint_names = self.joint_names_list
-#            jtp = JointTrajectoryPoint()
-#            jtp.positions = jep
-#            jtp.time_from_start = rospy.Duration(0.15)
-#            trajectory.points.append(jtp)
-#            self.joint_angles_pub.publish(trajectory)
-#            self.ep = jep
 
     def set_ep_callback(self, msg):
-        des_jep = msg.data        
+        des_jep = msg.data
         self.set_ep(des_jep)
-        
-        
-#        with self.lock:
-#            des_jep = copy.copy(msg.data)
-#            if des_jep is None or len(des_jep) != len(self.joint_names_list):
-#                raise RuntimeError("set_jep value is " + str(des_jep))
-##            self.delta_jep = des_jep
-#            jep = (np.array(des_jep)).tolist()
-#            trajectory = JointTrajectory()
-#            trajectory.joint_names = self.joint_names_list
-#            jtp = JointTrajectoryPoint()
-#            jtp.positions = jep
-#            jtp.time_from_start = rospy.Duration(0.15)
-#            trajectory.points.append(jtp)
-#            self.joint_angles_pub.publish(trajectory)
-#            self.ep = jep
 
     def wrap_angles(self, q):
         for ind in [4, 6]:
@@ -255,40 +172,40 @@ class URDFArm(HRLArm):
         self.marker_pub.publish(ee_marker)
 
 
-if __name__ == '__main__':
-    rospy.init_node('pr2_arms_test')
-    robot = URDFArm('l')
+## if __name__ == '__main__':
+##     rospy.init_node('pr2_arms_test')
+##     robot = URDFArm('l')
 
-    if False:
-        jep = [0.] * len(robot.joint_names_list) 
-        jep = np.radians([-30, 0, -90, -60, 0, 0, 0])
-        rospy.loginfo('Going to home location.')
-        raw_input('Hit ENTER to go')
-        robot.set_ep(jep, duration=2.)
+##     if False:
+##         jep = [0.] * len(robot.joint_names_list) 
+##         jep = np.radians([-30, 0, -90, -60, 0, 0, 0])
+##         rospy.loginfo('Going to home location.')
+##         raw_input('Hit ENTER to go')
+##         robot.set_ep(jep, duration=2.)
 
-    if True:
-        # simple go_jep example
-        roslib.load_manifest('equilibrium_point_control')
-        import equilibrium_point_control.epc as epc
-        epcon = epc.EPC(robot)
+##     if True:
+##         # simple go_jep example
+##         roslib.load_manifest('equilibrium_point_control')
+##         import equilibrium_point_control.epc as epc
+##         epcon = epc.EPC(robot)
 
-        while robot.get_joint_angles() == None:
-            rospy.sleep(0.1)
+##         while robot.get_joint_angles() == None:
+##             rospy.sleep(0.1)
 
-        q = robot.get_joint_angles()
-        robot.set_ep(q)
+##         q = robot.get_joint_angles()
+##         robot.set_ep(q)
 
-        jep = [0.] * len(robot.joint_names_list)
-        #jep = np.radians([30, 0, 90, -60, -180, -30, 0])  # for left arm
-        #jep = np.radians([-30, 0, -90, -60, 0, 0, 0]) # for right arm
-        epcon.go_jep(jep, speed=math.radians(10.))
+##         jep = [0.] * len(robot.joint_names_list)
+##         #jep = np.radians([30, 0, 90, -60, -180, -30, 0])  # for left arm
+##         #jep = np.radians([-30, 0, -90, -60, 0, 0, 0]) # for right arm
+##         epcon.go_jep(jep, speed=math.radians(10.))
 
-    if True:
-        while robot.get_joint_angles() == None:
-            rospy.sleep(0.1)
+##     if True:
+##         while robot.get_joint_angles() == None:
+##             rospy.sleep(0.1)
 
-        q = robot.get_joint_angles()
-        ee, r = robot.kinematics.FK(q)
-        print "ee is at :\n", ee
-        print "r is :\n", r
+##         q = robot.get_joint_angles()
+##         ee, r = robot.kinematics.FK(q)
+##         print "ee is at :\n", ee
+##         print "r is :\n", r
 

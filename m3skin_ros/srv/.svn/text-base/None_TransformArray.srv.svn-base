@@ -1,5 +1,0 @@
----
-# position and orientation of taxel coord frame with respect to link
-# coordinate frame (this transforms a point in the taxel frame to the
-# link coordinate frame)
-geometry_msgs/Transform[] data

@@ -1,6 +1,0 @@
-<launch>
-  <node name="skin_publisher" pkg="m3skin_calibration" type="m3skin_calibration" />
-
-  <node name="pressure_visualizer" pkg="m3skin_viz" type="m3skin_viz" />
-</launch>
-

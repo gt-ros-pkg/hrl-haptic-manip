@@ -133,8 +133,8 @@ def make_darci_ee_marker(ps, color, orientation = None,
     # stub_end_effector_mini45.dae
     # tube_with_ati_collisions.dae
     # wedge_blender.dae
-#    mesh.mesh_resource = "package://hrl_dynamic_mpc/tube_with_ati_collisions.dae"
-    mesh.mesh_resource = "package://hrl_gazebo_darci/urdf/meshes/mid_res/tactile_sensor/Darci_Flipper.stl"
+    # mesh.mesh_resource = "package://hrl_dynamic_mpc/meshes/tube_with_ati_collisions.dae"
+    mesh.mesh_resource = "package://hrl_dynamic_mpc/meshes/Darci_Flipper.stl"
     mesh.type = Marker.MESH_RESOURCE
 
     #rot_default = tr.Ry(np.radians(-90))*tr.Rz(np.radians(90))

@@ -1,0 +1,39 @@
+
+<!--
+When running in batch mode, launch this to visualize what is currently happening.
+-->
+
+<launch>
+    <arg name="use_taxels" default="1" />
+    <arg name="simulate_ft_sensor_at_link_base" default="0" />
+
+    <node pkg="hrl_software_simulation_darpa_m3"
+        type="draw_bodies.py" output="screen"
+        name="rviz_marker_bodies" respawn='true' />
+
+    <group if="$(arg use_taxels)">
+        <!--
+        <node pkg="hrl_common_code_darpa_m3" type="viz.py" output="log" name="skin_viz">
+            <remap from='/skin/contacts' to='/skin/contacts_unused' />
+        </node>
+        -->
+        <node pkg="hrl_common_code_darpa_m3" type="viz_taxel_array.py"
+            output="log" name="taxel_array_viz" respawn='true'/>
+    </group>
+
+    <group unless="$(arg use_taxels)">
+        <node pkg="hrl_common_code_darpa_m3" type="viz.py"
+            args="--arrow_color=green --display_normal_component"
+            output="log" name="skin_viz" respawn="true"/>
+        <group if="$(arg simulate_ft_sensor_at_link_base)">
+            <node pkg="hrl_common_code_darpa_m3" type="viz.py"
+                output="log" name="skin_all_viz"
+                args="--arrow_color=blue" respawn="true">
+                <remap from='/skin/contacts' to='/skin/contacts_all' />
+                <remap from='/skin/viz/contacts' to='/skin/viz/contacts_all' />
+            </node>
+        </group>
+    </group>
+
+</launch>
+

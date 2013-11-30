@@ -1,0 +1,30 @@
+<package>
+  <description brief="hrl_software_simulation_darpa_m3">
+
+     hrl_software_simulation_darpa_m3
+
+  </description>
+  <author>Marc Killpack and Advait Jain. Advisor: Prof. Charlie Kemp.
+  Healthcare Robotics Lab, Georgia Tech</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/hrl_software_simulation_darpa_m3</url>
+
+  <depend package="rospy"/>
+  <depend package="geometry_msgs"/>
+  <depend package="opende"/>
+  <depend package="kdl"/>
+
+  <depend package="hrl_haptic_manipulation_in_clutter_msgs"/>
+  <depend package="hrl_common_code_darpa_m3"/>
+
+  <depend package="hrl_msgs"/>
+  <depend package="hrl_srvs"/>
+  <depend package="hrl_lib"/>
+  <depend package="equilibrium_point_control"/>
+
+  <depend package="hrl_haptic_controllers_darpa_m3"/>
+
+</package>
+
+

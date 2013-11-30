@@ -1,0 +1,50 @@
+
+<launch>
+    <arg name="use_optitrak" default="1" />
+
+    <group if="$(arg use_optitrak)">
+        <!-- motion tracking (optitrak) -->
+        <include file="$(find hrl_common_code_darpa_m3)/launch/optitrak.launch" />
+    </group>
+
+    <group unless="$(arg use_optitrak)">
+        <node name="world_static_tf_broadcaster" pkg="tf"
+            type="static_transform_publisher"
+            args="0 0 0 0 0 0 1 world torso_lift_link 50"
+            respawn="false" output="screen"/>
+        <node name="static_cody_torso_trackable_publisher"
+            pkg="hrl_common_code_darpa_m3"
+            type="static_cody_torso_trackable.py"
+            respawn="false" output="screen"/>
+    </group>
+
+    <!-- use FT sensor to simulate skin -->
+    <node pkg="hrl_meka_skin_sensor_darpa_m3" type="skin_with_wrist_ft.py"
+        output="screen" name="skin_with_wrist_ft">
+        <remap from='/sensor/force' to='/r_arm/force'/>
+        <remap from='/ft/skin_contact' to='/skin/contacts_ft'/>
+    </node>
+
+    <!-- convert taxel array msg to SkinContact -->
+    <node pkg="hrl_common_code_darpa_m3" type="taxel_array_to_skin_contact.py"
+        output="screen" name="taxel_array_to_skin_contact">
+        <remap from='/skin/taxel_array_meka' to='/skin_patch_forearm_right/taxels/forces'/>
+        <remap from='/skin/contacts' to='/skin/contacts_forearm'/>
+    </node>
+
+    <!-- visualization -->
+    <node name="forearm_skin_visualizer" pkg="hrl_common_code_darpa_m3"
+        type="viz.py" output="screen" respawn="true">
+        <remap from='/skin/contacts' to='/skin/contacts_forearm'/>
+        <remap from='/skin/viz/contacts' to='/skin/viz/contacts_forearm'/>
+    </node>
+
+    <node name="ft_skin_visualizer" pkg="hrl_common_code_darpa_m3"
+        type="viz.py" output="screen" respawn="true">
+        <remap from='/skin/contacts' to='/skin/contacts_ft'/>
+        <remap from='/skin/viz/contacts' to='/skin/viz/contacts_ft'/>
+    </node>
+
+</launch>
+
+

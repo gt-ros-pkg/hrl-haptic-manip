@@ -1,0 +1,18 @@
+<launch>
+
+    <!-- in some cases I do not want to launch the static tf broadcaster-->
+    <arg name="ignore_static_tf" default="0" />
+
+    <node pkg="netft_rdt_driver" name="ft4" type="netft_node" args="192.168.0.120" respawn="true">
+        <remap from='netft_data' to='/force_torque_ft4' />
+    </node>
+
+    <group unless="$(arg ignore_static_tf)">
+        <node name="static_tf_ft4_broadcaster" pkg="tf"
+            type="static_transform_publisher"
+            args="0 0 0 0 0 0 1 world force_torque_ft4 50"
+            respawn="false" output="screen"/>
+    </group>
+
+</launch>
+

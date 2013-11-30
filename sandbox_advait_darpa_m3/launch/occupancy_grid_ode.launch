@@ -1,0 +1,29 @@
+
+<launch>
+    <node name='occupancy_grid_node' pkg="simple_occupancy_grid"
+        type="og_node" output="screen" respawn="false">
+
+        <param name="center_x" value="0.4" />
+        <param name="center_y" value="0." />
+        <param name="center_z" value="0.0" />
+
+        <param name="size_x" value="0.7" />
+        <param name="size_y" value="1.0" />
+        <param name="size_z" value="0.2" />
+
+        <param name="res_x" value="0.01" />
+        <param name="res_y" value="0.01" />
+        <param name="res_z" value="0.2" />
+
+    </node>
+
+    <node name="og_static_tf_broadcaster" pkg="tf"
+        type="static_transform_publisher"
+        args="0 0 0 0 0 0 1 torso_lift_link occupancy_grid_frame 50"
+        respawn="false" output="screen"/>
+    
+    <node name='occupancy_grid_creator' pkg='sandbox_advait_darpa_m3'
+        type='occupancy_grid_from_skin_contacts.py' args='--sim'/>
+
+</launch>
+

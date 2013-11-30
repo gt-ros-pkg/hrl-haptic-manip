@@ -1,0 +1,5 @@
+
+Useful bash commands:
+
+find . -name "reach_problem_dict_r0*.pkl" -exec python viz.py --pdp {} -q --sf \;
+

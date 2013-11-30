@@ -1,0 +1,93 @@
+
+<launch>
+    <!-- simulate taxels -->
+    <arg name="use_taxels" default="1" />
+
+    <!-- have a mobile base in software simulation -->
+    <arg name="mobile_base" default="0" />
+
+    <!-- randomly generate obstacles -->
+    <arg name="random" default="0" />
+
+    <!-- radius of the obstacles -->
+    <arg name="radius" default="0.01" />
+    <arg name="n_sliding" default="100" />
+    <arg name="n_fixed" default="20" />
+
+    <!-- defines if obstacles have stiffness -->
+    <arg name="n_compliant" default="0" />    
+    <arg name="stiffness_value" default="0" />    
+
+    <rosparam command="delete" param="m3" />
+    <rosparam command="delete" param="roslaunch" />
+
+    <rosparam> 
+        use_sim_time: true
+        m3/software_testbed/resolution: 100
+    </rosparam>
+
+    <!-- use skin taxels here -->
+    <group if="$(arg use_taxels)">
+        <node pkg="hrl_common_code_darpa_m3" type="taxel_array_to_skin_contact.py"
+            output="log" name="taxel_array_to_skin_contact" />
+        <node pkg="hrl_software_simulation_darpa_m3" 
+            type="simulator" output="screen" name="simulator">
+            <param name="include_mobile_base" value="$(arg mobile_base)" />
+            <remap from='/skin/contacts' to='/skin/contacts_unused' />
+        </node>
+    </group>
+
+    <!-- run without skin taxels. -->
+    <group unless="$(arg use_taxels)">
+        <node pkg="hrl_software_simulation_darpa_m3" type="simulator" output="screen" name="simulator" >
+            <param name="include_mobile_base" value="$(arg mobile_base)" />
+            <remap from='/skin/taxel_array' to='/skin/taxel_array_unused' />
+        </node>
+    </group>
+
+    <!-- This is where robot linkage and initial configuration is defined -->
+    <node pkg="hrl_software_simulation_darpa_m3" type="sim_arm_param_upload.py" output="log" 
+	  args="--planar_three_link_capsule" name="robot_params" >
+    </node> 
+
+    <!-- xmin 0.2 xmax 0.6 ymin -0.5 ymax 0.2 -->	
+    <!-- xmin 0.2 xmax 0.9 ymin -0.6 ymax 0.6 -->
+    <group if="$(arg random)">
+        <node pkg="hrl_common_code_darpa_m3" type="obstacles.py" output="log"
+            name="obstacles" args="--fixed=$(arg n_fixed) --sliding=$(arg n_sliding) --xmin=0.2 --xmax=0.6 --ymin=-0.5 --ymax=0.2 --radius=$(arg radius) --compliant=$(arg n_compliant) --stiffness_value=$(arg stiffness_value)" />
+    </group>
+
+    <!-- visualization nodes -->
+    <node pkg="hrl_software_simulation_darpa_m3"
+        type="draw_bodies.py" output="screen"
+        name="rviz_marker_bodies" respawn='true' />
+
+    <group if="$(arg use_taxels)">
+        <!--
+        <node pkg="darpa_m3" type="viz.py" output="log" name="skin_viz">
+            <remap from='/skin/contacts' to='/skin/contacts_unused' />
+        </node>
+        -->
+        <node pkg="hrl_common_code_darpa_m3" type="viz_taxel_array.py"
+            output="log" name="taxel_array_viz" respawn='true'/>
+    </group>
+
+    <group unless="$(arg use_taxels)">
+        <node pkg="hrl_common_code_darpa_m3" type="viz.py"
+            output="log" name="skin_viz" respawn="true"/>
+    </group>
+
+    <!--<include file='$(find hrl_software_simulation_darpa_m3)/launch/ode_sim_viz.launch'/>-->
+
+
+    <group unless="$(arg mobile_base)">
+        <!-- Need a static transform between world and torso_lift_link-->
+        <node pkg="tf" name="static_tf_world_torso_broadcaster"
+            type="static_transform_publisher"
+            args="0 0 0 0 0 0 1 world torso_lift_link 100"
+            respawn="false" output="log"/>
+    </group>
+
+</launch>
+
+

@@ -1,0 +1,83 @@
+
+
+
+
+
+########################################
+contacts stats for DYN
+########################################
+
+
+
+
+
+thresh is :5
+total num of contacts :158154
+Perc of jammming :0.000202334433527
+num of jamming :32
+Perc of contacts with velocity above 0.025 is:0.00963617739671
+num of contacts with velocity above 0.025 is:1524
+Perc of contacts with velocity above 0.05 is:0.00038570001391
+num of contacts with velocity above 0.05 is:61
+Perc of contacts with velocity above 0.1 is:0.0
+num of contacts with velocity above 0.1 is:0
+Perc of contacts with velocity above 0.2 is:0.0
+num of contacts with velocity above 0.2 is:0
+
+
+
+
+
+thresh is :10
+total num of contacts :5411
+Perc of jammming :0.000924043614859
+num of jamming :5
+Perc of contacts with velocity above 0.025 is:0.0293845869525
+num of contacts with velocity above 0.025 is:159
+Perc of contacts with velocity above 0.05 is:0.00295693956755
+num of contacts with velocity above 0.05 is:16
+Perc of contacts with velocity above 0.1 is:0.0
+num of contacts with velocity above 0.1 is:0
+Perc of contacts with velocity above 0.2 is:0.0
+num of contacts with velocity above 0.2 is:0
+
+
+
+
+
+thresh is :20
+total num of contacts :8
+Perc of jammming :0.0
+num of jamming :0
+Perc of contacts with velocity above 0.025 is:0.0
+num of contacts with velocity above 0.025 is:0
+Perc of contacts with velocity above 0.05 is:0.0
+num of contacts with velocity above 0.05 is:0
+Perc of contacts with velocity above 0.1 is:0.0
+num of contacts with velocity above 0.1 is:0
+Perc of contacts with velocity above 0.2 is:0.0
+num of contacts with velocity above 0.2 is:0
+
+
+
+
+
+thresh is :30
+total num of contacts :0
+NO CONTACT FOR THIS THRESHOLD
+
+
+
+
+
+thresh is :40
+total num of contacts :0
+NO CONTACT FOR THIS THRESHOLD
+
+
+
+
+
+thresh is :50
+total num of contacts :0
+NO CONTACT FOR THIS THRESHOLD

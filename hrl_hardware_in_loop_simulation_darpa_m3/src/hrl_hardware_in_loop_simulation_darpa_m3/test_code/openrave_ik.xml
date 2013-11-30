@@ -1,0 +1,67 @@
+<Environment> 
+
+	 <Robot file="cody.dae"> 
+	 	 <Manipulator> 
+             <!--
+             <effector> end_effector_RIGHT </effector> 
+             -->
+	 	 	 <effector> end_effector_LEFT </effector> 
+	 	 	 <base> torso_lift_link</base> 
+			 <!-- grasp goal with respect to the effector-->
+	 	 	 <Translation> 0 0.075 0</Translation> 
+	 	 	 <RotationAxis> 1 0 0 0</RotationAxis> 
+	 	 </Manipulator> 
+	 </Robot> 
+
+	 <KinBody name="obstacle1"> 
+	 	 <translation> -0.4 0.0 0.0 </translation> 
+	 	 <Body type="dynamic"> 
+	 	 	 <Geom type="box"> 
+	 	 	 	 <Extents>0.001 0.2 1.5</Extents> 
+	 	 	 	 <diffuseColor> 1 0.2 0.2 </diffuseColor> 
+	 	 	 </Geom> 
+	 	 </Body> 
+	 </KinBody>
+
+	 <KinBody name="obstacle2"> 
+	 	 <translation> -0.8 0.0 0.0 </translation> 
+	 	 <Body type="dynamic"> 
+	 	 	 <Geom type="box"> 
+	 	 	 	 <Extents>0.001 0.2 1.5</Extents> 
+	 	 	 	 <diffuseColor> 1 0.2 0.2 </diffuseColor> 
+	 	 	 </Geom> 
+	 	 </Body> 
+	 </KinBody>
+
+	 <KinBody name="obstacle3"> 
+	 	 <translation> -1.2 0.0 0.0 </translation> 
+	 	 <Body type="dynamic"> 
+	 	 	 <Geom type="box"> 
+	 	 	 	 <Extents>0.001 0.2 1.5</Extents> 
+	 	 	 	 <diffuseColor> 1 0.2 0.2 </diffuseColor> 
+	 	 	 </Geom> 
+	 	 </Body> 
+	 </KinBody>
+
+	 <KinBody name="obstacle4"> 
+	 	 <translation> -1.6 0.0 0.0 </translation> 
+	 	 <Body type="dynamic"> 
+	 	 	 <Geom type="box"> 
+	 	 	 	 <Extents>0.001 0.2 1.5</Extents> 
+	 	 	 	 <diffuseColor> 1 0.2 0.2 </diffuseColor> 
+	 	 	 </Geom> 
+	 	 </Body> 
+	 </KinBody>
+
+	 <KinBody name="obstacle5"> 
+	 	 <translation> -2.0 0.0 0.0 </translation> 
+	 	 <Body type="dynamic"> 
+	 	 	 <Geom type="box"> 
+	 	 	 	 <Extents>0.001 0.2 1.5</Extents> 
+	 	 	 	 <diffuseColor> 1 0.2 0.2 </diffuseColor> 
+	 	 	 </Geom> 
+	 	 </Body> 
+	 </KinBody>
+
+</Environment> 
+

@@ -1,0 +1,31 @@
+Trials for the dynamic model predictive controller with a three
+link simulated planar arm can be executed with the following script:
+
+gt-ros-pkg.hrl-haptic-manip/sandbox_marc_darpa_m3/src/haptic_controllers/three_link_mpc_lin_dyn/run_multiple_trials.py
+
+An example of its use can be found at:
+gt-ros-pkg.hrl-haptic-manip/sandbox_marc_darpa_m3/src/haptic_controllers/three_link_mpc_lin_dyn/run_trials_colossus.sh
+
+
+
+Unfortunately, the CVXGEN controller in this file was an intial
+attempt to include damping for the contact model.  The description
+file for the original controller used for our humanoids 2013 paper is
+included however at the following location:
+
+gt-ros-pkg.hrl-haptic-manip/sandbox_marc_darpa_m3/src/haptic_controllers/three_link_mpc_lin_dyn/humanoids_cvxgen_solver.description
+
+
+Building this controller in CVXGEN and minor modifications to the file at:
+gt-ros-pkg.hrl-haptic-manip/sandbox_marc_darpa_m3/src/haptic_controllers/three_link_mpc_lin_dyn/basic_test_mpc_with_dynamics.py
+
+should allow someone to reproduce the results we obtained for that paper.
+
+
+
+November 2013
+Marc Killpack - mkillpack3@gatech.edu
+
+
+
+

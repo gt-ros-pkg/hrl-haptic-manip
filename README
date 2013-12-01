@@ -1,0 +1,16 @@
+Trials for the quasi-static model predictive controller with a three
+link simulated planar arm can be executed with the script at the
+following location:
+
+gt-ros-pkg.hrl-haptic-manip/sandbox_advait_darpa_m3/25_obstacle_configurations/bash_scripts/run_multiple_trials.sh
+
+
+It should prompt for any needed inputs or you can check the file
+manually. Many of the other files in this branch are likely
+unnecessary to run these trials, but I haven't yet cleaned them up.
+
+November 2013
+Marc Killpack - mkillpack3@gatech.edu
+
+
+

@@ -1,0 +1,8 @@
+geometry_msgs/PoseStamped shoulder
+geometry_msgs/PoseStamped thigh
+geometry_msgs/PoseStamped pivot
+bool head_on_left
+---
+bool completed
+---
+string stage

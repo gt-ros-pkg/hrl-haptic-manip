@@ -1,0 +1,48 @@
+robot_MPC_params:
+    control_params:
+        step_size: 0.01 # step size of the waypoint trajectory in m
+        at_waypoint_dist_threshold: 0.05
+        at_waypoint_goal_dist_threshold: 0.005
+        frequency: 3.000000
+
+        cost1_weight: 100000000
+        cost2_weight: 0
+        cost3_weight: 0
+        cost4_weight: 0
+
+    model_params:
+        # Environment parameters
+        g: 9.8 # m/s
+        # this may be set differently than the actual friction coefficient for a margin of safety
+        mu: 0.15
+
+        # Robot parameters
+        y1_initial: 0.2 # m
+        y2_initial: 0.625 # m
+        y_min: -0.25 # m
+        y_max: 0.75 # m
+        z_min: 0. # m
+        z_max: 0.5 # m
+        K_1: 1000.000000
+        K_2: 1000.000000
+        F_break: 5 # N
+        F_comfort: 1000 # N
+
+        # Human parameters
+        q_t_min: -0.785 # rad
+        q_t_max: 2.051 # rad
+        q_s_min_rel_q_t: -1.824 # rad
+        q_s_max_rel_q_t: -0.01 # rad
+        r_t: 0.0618744 # m
+        r_s: 0.0476123 # m
+        m_t: 12.300000
+        m_s: 4.950000
+        L_t: 0.426720
+        L_s: 0.414020
+        m_t_actual: 12.3 # kg
+        m_s_actual: 4.95 # kg
+        L_t_actual: 0.42672 # m
+        L_s_actual: 0.41402 # m
+
+
+

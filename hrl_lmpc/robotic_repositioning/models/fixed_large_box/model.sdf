@@ -1,0 +1,65 @@
+<?xml version="1.0" ?>
+<sdf version="1.4">
+  <model name="fixed_box">
+    <static>false</static>
+    <link name="link">
+      <inertial>
+        <mass>10000</mass>
+        <inertia>
+          <ixx>10000.0</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>10000.0</iyy>
+          <iyz>0</iyz>
+          <izz>10000.0</izz>
+        </inertia>
+      </inertial>
+      <collision name="collision">
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <box>
+            <!--<size>1.0 2 0.4</size>-->
+            <size>1.0 2 0.90</size>
+          </box>
+        </geometry>
+        <surface>
+          <bounce>
+            <restitution_coefficient>0</restitution_coefficient>
+            <threshold>0</threshold>
+          </bounce>
+          <friction>
+            <ode>
+              <!--<mu>0.100000</mu>
+              <mu2>0.100000</mu2>-->
+	      <mu>100.000000</mu>
+              <mu2>100.000000</mu2>
+              <slip1>0.0</slip1>
+              <slip2>0.0</slip2>
+            </ode>
+          </friction>
+          <contact>
+            <ode>
+              <!--<kp>1000000.0</kp>
+              <kd>100.0</kd>-->
+              <soft_cfm>0.4</soft_cfm>
+              <soft_erp>0.6</soft_erp>
+            </ode>
+          </contact>
+        </surface>
+      </collision>
+      <visual name="visual">
+        <pose>0 0 0 0 0 0</pose>
+        <material>
+          <diffuse>1.0 0.0 0.0 1</diffuse>
+        </material>
+        <geometry>
+          <box>
+            <!--<size>1.0 2 0.4</size>-->
+            <!--<size>1.0 2 0.36</size>-->
+            <size>1.0 2 0.90</size>
+          </box>
+        </geometry>
+      </visual>
+    </link>
+  </model>
+</sdf>

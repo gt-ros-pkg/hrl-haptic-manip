@@ -1,0 +1,20 @@
+<package>
+  <description brief="crona_description">
+
+     crona_description contains description files for the cRoNA robot, similar to pr2_description.
+
+  </description>
+  <author>Phillip M. Grice</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/crona_description</url>
+
+  <depends>urdf</depends>
+  <depends>xacro</depends>
+  <depend package="sttr_msgs"/>
+  <depend package="sttr_srvs"/>
+  <depend package="hrl_lib"/>
+  
+</package>
+
+

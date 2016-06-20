@@ -1,0 +1,34 @@
+<package>
+  <description brief="sttr_behaviors">
+
+     sttr_behaviors
+
+  </description>
+  <author></author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/sttr_behaviors</url>
+  <depend package="rospy"/>
+  <depend package="actionlib"/>
+  <depend package="actionlib_msgs"/>
+  <!--<depend package="assistive_teleop"/>-->
+  <!--<depend package="sttr_web_teleop"/>-->
+  <depend package="std_msgs"/>
+  <depend package="geometry_msgs"/>
+  <depend package="tf"/>
+  <!--<depend package="hrl_pr2_arms"/>-->
+  <depend package="pr2_controllers_msgs"/>	
+  <depend package="kdl"/>
+  <depend package="urdf_parser_py"/> <!--http://www.ros.org/wiki/urdf_parser_py-->
+  <depend package="pykdl_utils"/> <!--gt-ros-pkg.hrl-kdl repo on google code-->
+  <depend package="hrl_lib" />
+  <!--depend package="hrl_tactile_controller"/>--> <!--gt-ros-pkg.hrl_haptic_manipulation_in_clutter repo-->
+  <depend package="LMPC_msgs"/>
+  <!--<depend package="equilibrium_point_control"/>-->
+  <depend package="crona_description"/>
+  <!--<depend package="hrl_haptic_mpc"/>-->
+  <rosdep name="wxwidgets"/>
+  <rosdep name="wxpython"/>
+</package>
+
+

@@ -1,0 +1,43 @@
+simple_prismatic_robot_controller_2:
+  type: robot_mechanism_controllers/JointTrajectoryActionController
+  joints:
+    - revolute_joint
+    - robot_joint_y
+    - robot_joint_z
+    - revolute_joint_2
+    - robot_joint_y_2
+    - robot_joint_z_2
+  gains:
+    revolute_joint:
+      p: 500. #100.0
+      d: 40. #200.0 #30.0
+      i: 0.0
+      i_clamp: 0.0
+    robot_joint_y:
+      p: 1000.000000
+      d: 600.000000
+      i: 0.0
+      i_clamp: 0.0
+    robot_joint_z:
+      p: 1000.000000
+      d: 600.000000
+      i: 0.0
+      i_clamp: 0.0
+    revolute_joint_2:
+      p: 500. #100.0
+      d: 40. #200.0 #30.0
+      i: 0.0
+      i_clamp: 0.0
+    robot_joint_y_2:
+      p: 1000.000000
+      d: 600.000000
+      i: 0.0
+      i_clamp: 0.0
+    robot_joint_z_2:
+      p: 1000.000000
+      d: 600.000000
+      i: 0.0
+      i_clamp: 0.0
+  position_joint_action_node:
+    joint: robot_joint
+    goal_threshold: 0.01

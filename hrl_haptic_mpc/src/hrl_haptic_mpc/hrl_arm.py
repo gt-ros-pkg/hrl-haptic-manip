@@ -19,14 +19,12 @@
 # sketched out in the HRLArm and HRLArmKinematics
 #
 
-## @package hrl_haptic_mpc
+# @package hrl_haptic_mpc
 # @author Advait Jain
 
-import numpy as np, math
+import numpy as np
 import copy
 from threading import RLock
-
-import roslib; roslib.load_manifest('hrl_haptic_mpc')
 
 try:
     import hrl_lib.geometry as hg
@@ -35,15 +33,16 @@ except ImportError, e:
 
 
 class HRLArm():
+
     def __init__(self, kinematics):
         # object of class derived from HRLArmKinematics
         self.kinematics = kinematics
-        self.ep = None # equilibrium point
-        self.kp = None # joint stiffness
-        self.kd = None # joint damping
-        self.q = None # angles
-        self.qdot = None # angular velocity
-        self.joint_names_list = None # joint names
+        self.ep = None  # equilibrium point
+        self.kp = None  # joint stiffness
+        self.kd = None  # joint damping
+        self.q = None  # angles
+        self.qdot = None  # angular velocity
+        self.joint_names_list = None  # joint names
         self.lock = RLock()
 
     def get_joint_velocities(self):
@@ -72,8 +71,8 @@ class HRLArm():
             return copy.copy(self.kp), copy.copy(self.kd)
 
     def get_joint_names(self):
-      with self.lock:
-        return copy.copy(self.joint_names_list)
+        with self.lock:
+            return copy.copy(self.joint_names_list)
 
     # do we really need this function?
     def freeze(self):
@@ -84,8 +83,9 @@ class HRLArm():
 
 
 class HRLArmKinematics():
+
     def __init__(self, n_jts):
-        self.tooltip_pos = np.matrix([0.,0.,0.]).T
+        self.tooltip_pos = np.matrix([0., 0., 0.]).T
         self.tooltip_rot = np.matrix(np.eye(3))
         self.n_jts = n_jts
 
@@ -97,10 +97,11 @@ class HRLArmKinematics():
     # @param link_number - perform FK up to this link. (0-n_jts)
     # @return pos (3X1) np matrix, rot (3X3) np matrix
     def FK(self, q, link_number=None):
-        if link_number == None:
+        if link_number is None:
             link_number = self.n_jts
         if link_number > self.n_jts:
-            raise RuntimeError('Link Number is greater than n_jts: %d'%link_number)
+            raise RuntimeError(
+                'Link Number is greater than n_jts: %d' % link_number)
         pos, rot = self.FK_vanilla(q, link_number)
 
         if link_number == self.n_jts:
@@ -130,26 +131,26 @@ class HRLArmKinematics():
         # this code should be common to everyone.
         pass
 
-    ## compute Jacobian at point pos.
+    # compute Jacobian at point pos.
     def jacobian(self, q, pos=None):
         raise RuntimeError('Unimplemented Function')
 
-    ## return min_array, max_array
+    # return min_array, max_array
     def get_joint_limits(self):
         raise RuntimeError('Unimplemented Function')
 
-    ## define tooltip as a 3x1 np matrix in the wrist coord frame.
+    # define tooltip as a 3x1 np matrix in the wrist coord frame.
     def set_tooltip(self, p, rot=np.matrix(np.eye(3))):
         self.tooltip_pos = copy.copy(p)
         self.tooltip_rot = copy.copy(rot)
 
-    #----- 2D functions ----------
+    # ----- 2D functions ----------
 
     # return list of 2D points corresponding to the locations of the
     # joint axes for a planar arm. Something funky for a spatial arm
     # that Advait does not want to put into words.
     def arm_config_to_points_list(self, q):
-        return [self.FK(q, i)[0].A1[0:2] for i in range(len(q)+1)]
+        return [self.FK(q, i)[0].A1[0:2] for i in range(len(q) + 1)]
 
     # project point onto the arm skeleton in 2D and compute distance
     # along it to the end effector.
@@ -174,12 +175,12 @@ class HRLArmKinematics():
     # tested only for planar arms. (see test_contact_at_joints.py in
     # sandbox_advait_darpa_m3/src/sandbox_advait_darpa_m3/software_simulation)
     def is_contact_at_joint(self, pt, q, dist_threshold):
-        pts_list = [self.FK(q, i)[0].A1 for i in range(len(q)+1)]
+        pts_list = [self.FK(q, i)[0].A1 for i in range(len(q) + 1)]
         proj_pt = hg.project_point_on_curve(pt, pts_list)
 
         # ignore end effector (it is not a joint)
         for jt in pts_list[:-1]:
-            dist = np.linalg.norm(np.matrix(jt).T-proj_pt)
+            dist = np.linalg.norm(np.matrix(jt).T - proj_pt)
             if dist <= dist_threshold:
                 return True
         return False

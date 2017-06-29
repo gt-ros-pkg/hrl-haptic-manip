@@ -1,13 +1,10 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 
 import sys
-import math, numpy as np
+import math
 
-import roslib; roslib.load_manifest('hrl_fabric_based_tactile_sensor')
 import rospy
-from hrl_msgs.msg import FloatArray
 
-import hrl_lib.util as ut
 import hrl_lib.transforms as tr
 
 import hrl_fabric_based_tactile_sensor.adc_publisher_node as apn
@@ -43,7 +40,7 @@ class Tactile_Sleeve():
 
         self.tar_forearm.data = [None for i in range(n_taxels)]
         # mapping the taxels to the raw ADC list.
-        idx_list = [6,9,0,3,7,10,1,4,8,11,2,5]
+        idx_list = [6, 9, 0, 3, 7, 10, 1, 4, 8, 11, 2, 5]
         for i in range(n_axis):
             for j in range(n_circum):
                 t = Transform()
@@ -72,7 +69,7 @@ class Tactile_Sleeve():
         self.tar_wrist.data = [None for i in range(13)]
 
         # mapping the taxels to the raw ADC list.
-        idx_list = [6,9,2,5]
+        idx_list = [6, 9, 2, 5]
         n_axis = 1
         rad = 0.03
         offset_along_axis = -0.04
@@ -94,7 +91,7 @@ class Tactile_Sleeve():
                 self.tar_wrist.data[idx_list[i*n_circum+j]] = t
 
         # mapping the taxels to the raw ADC list.
-        idx_list = [8,11,0,3,7,10,1,4]
+        idx_list = [8, 11, 0, 3, 7, 10, 1, 4]
         n_axis = 2
         rad = 0.02
         offset_along_axis = -0.17
@@ -130,10 +127,10 @@ class Tactile_Sleeve():
 
     def local_coord_frames_forearm_cb(self, req):
         return self.tar_forearm
-    
+
     def local_coord_frames_wrist_cb(self, req):
         return self.tar_wrist
-    
+
     def link_name_forearm_cb(self, req):
         return self.link_name_forearm
 
@@ -185,7 +182,7 @@ if __name__ == '__main__':
 
     for i in range(10):
         dev.readline()
-    
+
     rospy.loginfo('Started publishing data')
 
     rta = RawTaxelArray()
@@ -194,5 +191,3 @@ if __name__ == '__main__':
         raw_data_forearm_pub.publish(rta)
 
     dev.close()
-
-

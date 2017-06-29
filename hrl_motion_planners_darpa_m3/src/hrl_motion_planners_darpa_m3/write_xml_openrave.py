@@ -155,7 +155,7 @@ def write_linkage_xml_file(b_jts, bodies, fname):
 
 def write_environment_xml_file(d, fname, robot_xml):
     f_xml = open(fname, 'w')
-
+    
     f_xml.write('<Environment> \n'+
                 '\t <Robot name="3DOFRobot" file="'+robot_xml+'"> \n'+
                 '\t </Robot> \n')

@@ -2,11 +2,11 @@
 <launch>
 
     <!-- must specify on command line r or l -->
-    <arg name="arm_to_use"/>
+    <arg name="arm"/>
 
     <!-- launch nodes for the fabric tactile sleeve -->
     <include file='$(find hrl_fabric_based_tactile_sensor)/launch/pr2_tactile_sleeve_combined.launch'>
-        <arg name="arm_to_use" value="$(arg arm_to_use)"/>
+        <arg name="arm" value="$(arg arm)"/>
     </include>
 
     <!-- convert taxel array msg to SkinContact -->
@@ -53,7 +53,7 @@
     </node>
 
     <node pkg="sandbox_advait_darpa_m3" type="log_and_monitor_node.py" 
-        name="log_and_monitor_node" args="--pr2 --disable --arm_to_use=$(arg arm_to_use)" >
+        name="log_and_monitor_node" args="--pr2 --disable --arm=$(arg arm)" >
     </node>
 
     <!-- pasue and resume with the joystick -->

@@ -1,19 +1,16 @@
-
-
-import numpy as np, math
+import numpy as np
+import math
 import matplotlib.pyplot as pp
 
-import roslib; roslib.load_manifest('sandbox_advait_darpa_m3')
-
 import hrl_lib.matplotlib_util as mpu
-
-
 
 # trying to see if it makes any difference if I choose R1 or R2 to be
 # the variable resistor in the voltage divider.
 #
 # Answer: NO. Something I should have realized without having to make
 # a plot.
+
+
 def which_variable():
     r_static = 2e3
     r_min = 800.
@@ -44,7 +41,7 @@ def pull_up_resistor_value(rmax, rmin):
     n_r = 200
     n_pullups = 4
     adc_counts = 1024
-    
+
     pullup_best = math.sqrt(rmax*rmin)
     pullup_max = 2 * pullup_best
     pullup_min = 0.5 * pullup_best
@@ -64,7 +61,7 @@ def pull_up_resistor_value(rmax, rmin):
     mpu.figure()
     for r_static in pullup_arr:
         v = r_var / (r_static + r_var) * v_cc
-        pp.plot(r_var, v, mpu.random_color(), label='R1: %.1f'%r_static)
+        pp.plot(r_var, v, mpu.random_color(), label='R1: %.1f' % r_static)
         v_diff_list.append(v[-1] - v[0])
 
     pp.xlabel('Variable Resistance')
@@ -88,32 +85,27 @@ def pull_up_resistor_value(rmax, rmin):
     pp.show()
 
 
-
 if __name__ == '__main__':
-    #which_variable()
+    # which_variable()
 
     # Velostat
     rmax = 5e3
     rmin = 100
 
     # Eeonyx LTT-SL-PA-MM-1-58B
-    #rmax = 15e3
-    #rmin = 1000
+    # rmax = 15e3
+    # rmin = 1000
 
     # Eeonyx LR-SL-PA-MM-1-54
-    #rmax = 15e3
-    #rmin = 1500
+    # rmax = 15e3
+    # rmin = 1500
 
     # Eeonyx LVY-SL-PA-10E6 RP-3-89-3
-    #rmax = 1.5e6
-    #rmin = 150e3
+    # rmax = 1.5e6
+    # rmin = 150e3
 
     # Eeonyx NW170-SL-PA
-    #rmax = 1.5e3
-    #rmin = 130
+    # rmax = 1.5e3
+    # rmin = 130
 
     pull_up_resistor_value(rmax, rmin)
-
-
-
-

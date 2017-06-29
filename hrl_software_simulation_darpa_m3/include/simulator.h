@@ -1,11 +1,17 @@
 #include "ros/ros.h"
+#include <ros/callback_queue.h>
 #include <boost/thread/mutex.hpp>
 #include "hrl_haptic_manipulation_in_clutter_msgs/SkinContact.h"
 #include "hrl_haptic_manipulation_in_clutter_msgs/BodyDraw.h"
 #include "hrl_haptic_manipulation_in_clutter_msgs/TaxelArray.h"
 #include "hrl_haptic_manipulation_in_clutter_msgs/MechanicalImpedanceParams.h"
+#include "hrl_haptic_manipulation_in_clutter_msgs/ContactTable.h"
 #include "hrl_msgs/FloatArrayBare.h"
 #include "std_msgs/String.h"
+#include "std_msgs/Float64.h"
+#include "std_msgs/Bool.h"
+#include "std_msgs/Int32MultiArray.h"
+//#include "roslib/Clock.h"
 #include <tf/transform_broadcaster.h>  
 #include "rosgraph_msgs/Clock.h"
 #include <cmath>
@@ -16,7 +22,13 @@
 #include <algorithm>
 #include <functional>
 #include <ode/ode.h>
+#include <src/collision_util.h>
 #include <sstream>
+#include <map> 
+
+//#include <drawstuff/drawstuff.h>
+//#include "texturepath.h"
+
 
 #ifdef dDOUBLE
 #define MAX_CONTACTS 20          // maximum number of contact points per body
@@ -24,22 +36,39 @@
 #define NUM_OBST 1000
 #define MAX_NUM_REV 30
 #define MAX_NUM_PRISM 30
+#define MAX_NUM_UNI 30
 #define PI 3.14159265
 #endif
+
+#define FIXED_OBST_COST 100.0
+#define MOVABLE_OBST_COST 1.0
+#define COMPLIANT_OBST_COST 1.0
+
+int num_used_movable = NUM_OBST;
+int num_used_fixed = NUM_OBST;
+int num_used_compliant = NUM_OBST;
+
+boost::mutex m;
+
 
 struct MyFeedback {
     dJointFeedback fb;
 };
 
+static int obst_table_ID[NUM_OBST];
+static bool obst_table_contact[NUM_OBST];
 
 class Simulator{
     public:
         //  bool got_image;
         Simulator(ros::NodeHandle &nh);
         ~Simulator();
+	void controller_running_cb(const std_msgs::Bool msg);
+	//void opt_finished_cb(const std_msgs::Bool msg);
         void JepCallback(const hrl_msgs::FloatArrayBare msg);
         void ImpedanceCallback(const hrl_haptic_manipulation_in_clutter_msgs::MechanicalImpedanceParams msg);
         void BaseEpCallback(const hrl_msgs::FloatArrayBare msg);
+        void BaseImpedanceCallback(const hrl_haptic_manipulation_in_clutter_msgs::MechanicalImpedanceParams msg);
         void create_fixed_obstacles();
         void create_movable_obstacles();
         void create_compliant_obstacles();
@@ -51,27 +80,49 @@ class Simulator{
         static void nearCallback (void *data, dGeomID o1, dGeomID o2);
         void classCallback (dGeomID o1, dGeomID o2);
         void publish_angle_data();
+        void publish_base_pos_data();
         void publish_imped_skin_viz();
         void update_linkage_viz();
         void inner_torque_loop();
         void update_friction_and_obstacles();
         void get_joint_data();	
         void clear();
-        void update_taxel_simulation();
+        void update_taxel_simulation(); 
+        void setup_current_taxel_config(hrl_haptic_manipulation_in_clutter_msgs::TaxelArray &taxel);
         void update_proximity_simulation();
-	double get_dist(double x1, double y1, double x2, double y2, double radius);
-	void setup_current_taxel_config(hrl_haptic_manipulation_in_clutter_msgs::TaxelArray &taxel);
         ros::Publisher clock_pub; 
-	dSimpleSpace space;
-	dWorld world;
-	static const dReal timestep=0.0005;
-	double cur_time;
+	double last_jep_time;
+	bool controller_running;
+        void publish_contact_table();
+        static void init_contact_table(int index, int id, int contact);
+        double get_dist(double x1, double y1, double x2, double y2, double radius);
+	/* bool running; */
+	/* ros::Publisher waiting_pub; */
+	/* ros::Publisher done_waiting_pub; */
 
+        dWorld world;
+        dSimpleSpace space;
+        dReal timestep;
+        double cur_time;    
+
+        bool use_mobile_base;
+
+        hrl_msgs::FloatArrayBare angles;
+        hrl_msgs::FloatArrayBare angle_rates;
+        hrl_msgs::FloatArrayBare jep_ros;
+
+        hrl_msgs::FloatArrayBare mobile_base_pos;
+        hrl_msgs::FloatArrayBare mobile_base_pos_rates;
+        hrl_msgs::FloatArrayBare mobile_base_ep_ros;
+        
     protected:
         dHingeJoint manip_rev_jts[MAX_NUM_REV];
         dHingeJoint base_rev_jts[MAX_NUM_REV];
         dSliderJoint manip_pris_jts[MAX_NUM_PRISM];
         dSliderJoint base_pris_jts[MAX_NUM_PRISM];
+        dUniversalJoint manip_uni_jts[MAX_NUM_UNI];
+        dUniversalJoint base_uni_jts[MAX_NUM_UNI];
+
         dBody obstacles[NUM_OBST];
         dBody fixed_obstacles[NUM_OBST];
         dBody compliant_obstacles[NUM_OBST];
@@ -84,22 +135,27 @@ class Simulator{
         std::string links_shape[100];
         dBox g_link_box[100];
         dCapsule g_link_cap[100];
+        dSphere g_link_sph[100];
+
+        int num_links;
+        std::string links_name[100];
+        std::string jts_type[100];
+
         dBodyID link_ids[100];
-        dBodyID fixed_obst_ids[NUM_OBST];
+        //dBodyID fixed_obst_ids[NUM_OBST];
+        //dBodyID movable_obst_ids[NUM_OBST];
         dJointID plane2d_joint_ids[NUM_OBST];
         dJointID compliant_plane2d_joint_ids[NUM_OBST];
         dJointID fixed_joint_ids[NUM_OBST];
 
-        dBody *body_mobile_base;
-        dBox *geom_mobile_base;
-        dJointID mobile_base_plane2d_jt_id;
+        hrl_haptic_manipulation_in_clutter_msgs::ContactTable contact_table;
 
-        hrl_msgs::FloatArrayBare angles;
-        hrl_msgs::FloatArrayBare angle_rates;
-        hrl_msgs::FloatArrayBare jep_ros;
+        dBodyID base_ids[100];
+        dBody body_mobile_base[100];
+        dBox geom_mobile_base[100];
+        //dJointID mobile_base_plane2d_jt_id;
 
 	bool use_prox_sensor;
-        int num_links;
         int num_jts;
 	double resolution;
         ros::NodeHandle nh_;
@@ -116,10 +172,12 @@ class Simulator{
         std::vector<double> k_d;
         std::vector<double> torques;
 
-        // std::vector<double> mobile_base_k_p(3, 0);
-        // std::vector<double> mobile_base_k_d(3, 0);
-        // std::vector<double> mobile_base_ep(3, 0); // x, y, theta
-        // std::vector<double> mobile_base_generalized_forces(3, 0); // Fx, Fy, Tz
+        std::vector<double> mobile_base_x;
+        std::vector<double> mobile_base_x_dot;
+        std::vector<double> mobile_base_ep; // x, y, theta
+        std::vector<double> mobile_base_k_p;
+        std::vector<double> mobile_base_k_d;
+        std::vector<double> mobile_base_forces; // Fx, Fy, Tz
 
         //  std::vector<std::string> names[MAX_FEEDBACKNUM];
         std::vector<int> force_grouping;
@@ -157,10 +215,15 @@ class Simulator{
         ros::Publisher imped_pub;
         ros::Publisher skin_pub;
         ros::Publisher jep_pub;
+        ros::Publisher controller_time_pub;
+        ros::Publisher contact_table_pub;
 
-	int num_used_movable;
-	int num_used_fixed;
-	int num_used_compliant;
+        ros::Publisher mobile_base_pos_pub;
+        ros::Publisher mobile_base_pos_rates_pub;
+        ros::Publisher mobile_base_pos_ep_pub;
+
+        
+        ros::Subscriber controller_running_sub;
 
 	boost::mutex m;
 
@@ -173,11 +236,13 @@ Simulator::Simulator(ros::NodeHandle &nh) :
     num_used_fixed = NUM_OBST;
     num_used_compliant = NUM_OBST;
 
-    //timestep = 0.0005;
+    timestep = 0.0005; //0.0005;
     cur_time = 0.0;
+    
 
     resolution = 0;
     use_prox_sensor = false;
+    use_mobile_base = false;
     num_links = 0;
     num_jts = 0;
     while (nh_.getParam("/m3/software_testbed/linkage/num_links", num_links) == false)
@@ -186,8 +251,11 @@ Simulator::Simulator(ros::NodeHandle &nh) :
         sleep(0.1);
     while (nh_.getParam("/use_prox_sensor", use_prox_sensor) == false)
         sleep(0.1);
+    while (nh_.getParam("/use_mobile_base", use_mobile_base) == false)
+        sleep(0.1);
     while (nh_.getParam("/m3/software_testbed/resolution", resolution) == false)
         sleep(0.1);
+
     fbnum=0;
     force_group=0;
     max_friction = 2;
@@ -201,6 +269,13 @@ Simulator::Simulator(ros::NodeHandle &nh) :
     skin_pub = nh_.advertise<hrl_haptic_manipulation_in_clutter_msgs::SkinContact>("/skin/contacts", 100);
     jep_pub = nh_.advertise<hrl_msgs::FloatArrayBare>("/sim_arm/jep", 100);
     clock_pub = nh_.advertise<rosgraph_msgs::Clock>("/clock", 1/timestep);
+    controller_time_pub = nh_.advertise<std_msgs::Float64>("/controller_time_step", 100);
+    controller_running_sub = nh_.subscribe("/epc_skin/local_controller/controller_running", 100, &Simulator::controller_running_cb, this);
+    contact_table_pub = nh_.advertise<hrl_haptic_manipulation_in_clutter_msgs::ContactTable>("/sim_arm/contact_table", 100);
+
+    mobile_base_pos_pub       = nh_.advertise<hrl_msgs::FloatArrayBare>("/sim_arm/base_pos", 100);
+    mobile_base_pos_rates_pub = nh_.advertise<hrl_msgs::FloatArrayBare>("/sim_arm/base_pos_rates", 100);  
+    mobile_base_pos_ep_pub    = nh_.advertise<hrl_msgs::FloatArrayBare>("/sim_arm/base_ep", 100);
 
     m.lock();
     for (int ii = 0; ii < num_jts; ii++)
@@ -212,6 +287,17 @@ Simulator::Simulator(ros::NodeHandle &nh) :
         k_d.push_back(0);
         torques.push_back(0);
     }
+    
+    for (int ii = 0; ii < 2; ii++)
+    {
+        mobile_base_x.push_back(0);
+        mobile_base_x_dot.push_back(0);
+        mobile_base_ep.push_back(0);
+        mobile_base_k_p.push_back(100.0);
+        mobile_base_k_d.push_back(1.0);
+        mobile_base_forces.push_back(0);
+    }
+
     m.unlock();
 }
 
@@ -221,13 +307,38 @@ Simulator::~Simulator()
 
 using namespace std;
 
+void Simulator::controller_running_cb(const std_msgs::Bool msg)
+{
+  controller_running = msg.data;
+  /* if (msg.data) */
+  /*   { */
+  /*     controller_running=true; */
+  /*   } */
+}
+
 
 void Simulator::JepCallback(const hrl_msgs::FloatArrayBare msg)
 {
     m.lock();
     jep = msg.data;
+    std_msgs::Float64 time_step_cont;
+    time_step_cont.data = cur_time-last_jep_time;
+    controller_time_pub.publish(time_step_cont);
+    last_jep_time = cur_time;
     m.unlock();
 }
+
+void Simulator::BaseEpCallback(const hrl_msgs::FloatArrayBare msg)
+{
+    m.lock();
+    mobile_base_ep = msg.data;
+    //std_msgs::Float64 time_step_cont;
+    //time_step_cont.data = cur_time-last_jep_time;
+    //controller_time_pub.publish(time_step_cont);
+    //last_jep_time = cur_time;
+    m.unlock();
+}
+
 
 void Simulator::ImpedanceCallback(const hrl_haptic_manipulation_in_clutter_msgs::MechanicalImpedanceParams msg)
 {
@@ -237,9 +348,17 @@ void Simulator::ImpedanceCallback(const hrl_haptic_manipulation_in_clutter_msgs:
     m.unlock();
 }
 
+void Simulator::BaseImpedanceCallback(const hrl_haptic_manipulation_in_clutter_msgs::MechanicalImpedanceParams msg)
+{
+    m.lock();
+    mobile_base_k_p = msg.k_p.data;
+    mobile_base_k_d = msg.k_d.data;
+    m.unlock();
+}
+
 void Simulator::nearCallback(void *data, dGeomID o1, dGeomID o2)
 {
-    Simulator* obj = (Simulator*) data;
+    Simulator* obj = (Simulator*) data; // it looks unnecessarilly heavy object.
     int i;
     dBodyID b1 = dGeomGetBody(o1);
     dBodyID b2 = dGeomGetBody(o2);
@@ -261,9 +380,19 @@ void Simulator::nearCallback(void *data, dGeomID o1, dGeomID o2)
     if (b1_is_link && b2_is_link)
         return;
 
+    // ignoring base contact.
+    for (int i=0; i<2; i++)
+    {
+        if (obj->base_ids[i] == b1)
+            return;
+        if (obj->base_ids[i] == b2)
+            return;
+    }
+
     bool arm_contact = false;
     stringstream ss;
     bool is_b1 = false;
+    bool is_b2 = false;
 
     for (int i=0; i<obj->num_links; i++)
     {
@@ -274,9 +403,30 @@ void Simulator::nearCallback(void *data, dGeomID o1, dGeomID o2)
             if (obj->link_ids[i] == b1)
                 is_b1 = true;
             else
-                is_b1 = false;
+                is_b2 = true;
         }
     }
+
+    // Check object ids
+    if (is_b1){
+      //printf("%d\n", b2);
+      for (int i=0; i<num_used_movable+num_used_fixed; i++){
+        if (obst_table_ID[i] == (intptr_t)b2){
+          obst_table_contact[i] = true;
+          break;
+        }
+      }
+    }
+    else{
+      //printf("%d\n", b1);
+      for (int i=0; i<num_used_movable+num_used_fixed; i++){
+        if (obst_table_ID[i] == (intptr_t)b1){
+          obst_table_contact[i] = true;
+          break;
+        }
+      }
+    }
+    
 
     dContact contact[MAX_CONTACTS];   // up to MAX_CONTACTS contacts per box-box
     int numc = dCollide (o1, o2, MAX_CONTACTS, &(contact[0].geom), sizeof(dContact));
@@ -319,7 +469,7 @@ void Simulator::nearCallback(void *data, dGeomID o1, dGeomID o2)
                 obj->pt_x.push_back(contact[i].geom.pos[0]);
                 obj->pt_y.push_back(contact[i].geom.pos[1]);
                 obj->pt_z.push_back(contact[i].geom.pos[2]);
-
+                
                 dJointID c = dJointCreateContact (obj->world,obj->joints.id(),&contact[i]);
                 dJointAttach (c,b1,b2);
 
@@ -342,6 +492,7 @@ void Simulator::nearCallback(void *data, dGeomID o1, dGeomID o2)
             con_pt.y = contact_loc[1];
             con_pt.z = contact_loc[2];
 
+
             obj->skin.locations.push_back(con_pt);
             hrl_msgs::FloatArrayBare pts_x_ar;
             pts_x_ar.data = obj->pt_x;
@@ -355,7 +506,31 @@ void Simulator::nearCallback(void *data, dGeomID o1, dGeomID o2)
             obj->pt_x.clear();
             obj->pt_y.clear();
             obj->pt_z.clear();
-            obj->force_group += 1;
+            obj->force_group += 1;            
+
+            // Check object ids
+            float contact_cost;
+            if (is_b1){
+                if (obst_table_ID[0] <= (intptr_t)b2 &&
+                    obst_table_ID[num_used_movable] > (intptr_t)b2)
+                    contact_cost = MOVABLE_OBST_COST;
+                else if (obst_table_ID[num_used_movable] <= (intptr_t)b2 &&
+                         obst_table_ID[num_used_movable+num_used_compliant] > (intptr_t)b2)
+                    contact_cost = COMPLIANT_OBST_COST;
+                else
+                    contact_cost = FIXED_OBST_COST;
+            }
+            else{
+                if (obst_table_ID[0] <= (intptr_t)b1 &&
+                    obst_table_ID[num_used_movable] > (intptr_t)b1)
+                    contact_cost = MOVABLE_OBST_COST;
+                else if (obst_table_ID[num_used_movable] <= (intptr_t)b1 &&
+                         obst_table_ID[num_used_movable+num_used_compliant] > (intptr_t)b1)
+                    contact_cost = COMPLIANT_OBST_COST;
+                else
+                    contact_cost = FIXED_OBST_COST;
+            }
+            obj->skin.costs.push_back(contact_cost);
         }
     }
 }
@@ -367,16 +542,18 @@ void Simulator::publish_angle_data()
     jep_pub.publish(jep_ros);
 }
 
+void Simulator::publish_base_pos_data()
+{
+    mobile_base_pos_rates_pub.publish(mobile_base_pos_rates);
+    mobile_base_pos_pub.publish(mobile_base_pos);
+    mobile_base_pos_ep_pub.publish(mobile_base_ep_ros);
+}
+
 void Simulator::go_initial_position()
 {
     XmlRpc::XmlRpcValue init_angle;
     while (nh_.getParam("/m3/software_testbed/joints/init_angle", init_angle) == false)
         sleep(0.1);
-
-    // // moving mobile base to 0, 0, 0
-    // mobile_base_ep[0] = 0;
-    // mobile_base_ep[1] = 0;
-    // mobile_base_ep[2] = 0;
 
     m.lock();
     for (int ii = 0; ii < num_jts ; ii++)
@@ -384,6 +561,20 @@ void Simulator::go_initial_position()
         jep[ii] = (double)init_angle[ii];
     }
     m.unlock();
+
+    if (use_mobile_base)
+    {
+        XmlRpc::XmlRpcValue init_pos;
+        while (nh_.getParam("/m3/software_testbed/joints/init_base_pos", init_pos) == false)
+            sleep(0.1);
+     
+        m.lock();
+        mobile_base_ep[0] = (double)init_pos[0];
+        mobile_base_ep[1] = (double)init_pos[1];
+        //mobile_base_ep[2] = 0.0; // angle is not implemented
+        m.unlock();
+    }
+
 
     float error = 1.;
     float error_thresh = 0.005;
@@ -401,8 +592,24 @@ void Simulator::go_initial_position()
         error = 0.;
         for (int ii = 0; ii < num_jts ; ii++)
         {
-            q[ii] = manip_rev_jts[ii].getAngle();
+            if (jts_type[ii] == "hinge")
+            {
+                q[ii] = manip_rev_jts[ii].getAngle();
+            }
+            else if(jts_type[ii] == "slider"){
+                q[ii] = manip_pris_jts[ii].getPosition();
+            }                    
+
             error += (q[ii]-jep[ii])*(q[ii]-jep[ii]);
+        }
+
+        if (use_mobile_base)
+        {
+            for (int ii = 0; ii < 2 ; ii++)
+            {
+                mobile_base_x[ii] = base_pris_jts[ii].getPosition();
+                error += (mobile_base_x[ii]-mobile_base_ep[ii])*(mobile_base_x[ii]-mobile_base_ep[ii]);
+            }
         }
 
         /***********KEEP this for visualization if I ever need it while tuning gains*****/
@@ -511,13 +718,19 @@ void Simulator::create_robot()
     XmlRpc::XmlRpcValue link_shapes;
     while (nh_.getParam("/m3/software_testbed/linkage/shapes", link_shapes) == false)
         sleep(0.1);
-
+    XmlRpc::XmlRpcValue link_rot;
+    while (nh_.getParam("/m3/software_testbed/linkage/rotations", link_rot) == false)
+        sleep(0.1);
+    
     XmlRpc::XmlRpcValue link_masses;
     while (nh_.getParam("/m3/software_testbed/linkage/mass", link_masses) == false)
         sleep(0.1);
-
     while (nh_.getParam("/m3/software_testbed/linkage/num_links", num_links) == false)
         sleep(0.1);
+    XmlRpc::XmlRpcValue link_names;
+    while (nh_.getParam("/m3/software_testbed/linkage/names", link_names) == false)
+        sleep(0.1);
+
 
     //int num_jts;
     while (nh_.getParam("/m3/software_testbed/joints/num_joints", num_jts) == false)
@@ -530,7 +743,7 @@ void Simulator::create_robot()
     XmlRpc::XmlRpcValue jt_damping;
     while (nh_.getParam("/m3/software_testbed/joints/imped_params_damping", jt_damping) == false)
         sleep(0.1);
-    
+
     if ((uint)jt_stiffness.size() != k_p.size())
     {
       std::cerr << "THE JOINT STIFFNESS VECTOR AND NUMBER OF JOINTS IS NOT EQUAL" << std::endl;
@@ -566,9 +779,56 @@ void Simulator::create_robot()
     XmlRpc::XmlRpcValue jt_attach;
     while (nh_.getParam("m3/software_testbed/joints/attach", jt_attach) == false)
         sleep(0.1);
+    XmlRpc::XmlRpcValue jt_type;
+    while (nh_.getParam("m3/software_testbed/joints/types", jt_type) == false)
+        sleep(0.1);
+
+
+    XmlRpc::XmlRpcValue base_jt_stiffness;
+    XmlRpc::XmlRpcValue base_jt_damping;
+    XmlRpc::XmlRpcValue base_jt_min;
+    XmlRpc::XmlRpcValue base_jt_max;
+
+    if (use_mobile_base)
+    {
+        while (nh_.getParam("/m3/software_testbed/joints/imped_params_base_stiffness", base_jt_stiffness) == false)
+            sleep(0.1);
+        while (nh_.getParam("/m3/software_testbed/joints/imped_params_base_damping", base_jt_damping) == false)
+            sleep(0.1);
+        while (nh_.getParam("/m3/software_testbed/joints/base_min", base_jt_min) == false)
+            sleep(0.1);
+        while (nh_.getParam("/m3/software_testbed/joints/base_max", base_jt_max) == false)
+            sleep(0.1);
+
+        m.lock();
+        for (int ii = 0; ii < 2; ii++)
+        {
+            mobile_base_k_p[ii] = (double)base_jt_stiffness[ii];
+            mobile_base_k_d[ii] = (double)base_jt_damping[ii];
+        }
+        m.unlock();
+
+    }
 
 
     dMatrix3 body_rotate = {1, 0, 0, 0, 0, 0, 1, 0, 0, -1, 0, 0};
+
+    // Create mobile base
+    if (use_mobile_base)
+    {
+        for (int ii = 0; ii < 2; ii++)
+        { 
+            dMass mass;            
+            body_mobile_base[ii].create(world);
+            body_mobile_base[ii].setPosition(0.0,0.0,0.0);  
+            dMassSetBoxTotal(&mass, 10000.0, 0.01, 0.01, 0.01);	    
+            body_mobile_base[ii].setMass(mass);
+            geom_mobile_base[ii].create(space, 0.01, 0.01, 0.01);
+            geom_mobile_base[ii].setBody(body_mobile_base[ii]);
+            
+            base_ids[ii] = body_mobile_base[ii].id();
+        }
+    }
 
     for (int ii = 0; ii < num_links; ii++)
     {
@@ -580,6 +840,7 @@ void Simulator::create_robot()
         links_dim[ii][0] = (double)link_dimensions[ii][0];
         links_dim[ii][1] = (double)link_dimensions[ii][1];
         links_dim[ii][2] = (double)link_dimensions[ii][2];
+        links_name[ii] = (string)link_names[ii];
 
         //dBodySetPosition(link_ids[ii], (double)link_pos[ii][0], (double)link_pos[ii][1], (double)link_pos[ii][2]);  
         if (links_shape[ii] == "cube")
@@ -597,34 +858,71 @@ void Simulator::create_robot()
             g_link_cap[ii].create(space, (double)link_dimensions[ii][0]/2.0, (double)link_dimensions[ii][2]);
             g_link_cap[ii].setBody(links_arr[ii]);
         }
+        else if (links_shape[ii] == "sphere")
+        {
+            dMassSetSphereTotal(&mass, (double)link_masses[ii], (double)link_dimensions[ii][2]/2.0);
+            links_arr[ii].setMass(mass);
+            g_link_sph[ii].create(space, (double)link_dimensions[ii][2]/2.0);
+            g_link_sph[ii].setBody(links_arr[ii]);
+        }
         else
         {
             std::cerr<<"wrong type of link shape was defined in config file,"<<links_shape[ii]<<" does not exist \n";
             assert(false);
         }
-        links_arr[ii].setRotation(body_rotate);
+
+        // TODO!! multi-axis rotation
+        if (((double)link_rot[ii][0] != 0.0) || ((double)link_rot[ii][1] != 0.0) || ((double)link_rot[ii][2] != 0.0))
+        {
+            if ((double)link_rot[ii][0] != 0.0)
+              dRFromAxisAndAngle(body_rotate, 1, 0, 0, (double)link_rot[ii][0]);
+            else if ((double)link_rot[ii][1] != 0.0)
+              dRFromAxisAndAngle(body_rotate, 0, 1, 0, (double)link_rot[ii][1]);
+            else if ((double)link_rot[ii][2] != 0.0)
+              dRFromAxisAndAngle(body_rotate, 0, 0, 1, (double)link_rot[ii][2]);
+            links_arr[ii].setRotation(body_rotate);
+        }
+        
         link_ids[ii] = links_arr[ii].id();
     }
 
     for (int ii = 0; ii < num_jts; ii++)
     {
-        if (true)
+        jts_type[ii] = (string)jt_type[ii];
+
+        if (jt_type[ii] == "hinge")
         {
             manip_rev_jts[ii].create(world);
             int attach1, attach2;
 
-            attach1 = (int)jt_attach[ii][0];
-            attach2 = (int)jt_attach[ii][1];
+            attach1 = (int)jt_attach[ii][0]; // Current Joint?
+            attach2 = (int)jt_attach[ii][1]; // Last Joint?
             if (attach1 == -1 or attach2 == -1)
             {
                 if (attach1 == -1)
                 {
-                    manip_rev_jts[ii].attach(0, links_arr[attach2]);
+                    if (use_mobile_base == true)
+                    {
+                        manip_rev_jts[ii].attach(body_mobile_base[1], links_arr[attach2]);
+                    }
+                    else
+                    {
+                        manip_rev_jts[ii].attach(0, links_arr[attach2]);
+                    }
                 }
                 else
                 {
-                    manip_rev_jts[ii].attach(links_arr[attach1], 0);
+                    if (use_mobile_base == true)
+                    {
+                        manip_rev_jts[ii].attach(links_arr[attach1], body_mobile_base[1]);
+                    }
+                    else
+                    {
+                        manip_rev_jts[ii].attach(links_arr[attach1], 0);
+                    }
+
                 }
+
             }
             else
             {
@@ -635,6 +933,38 @@ void Simulator::create_robot()
             manip_rev_jts[ii].setAxis((double)jt_axes[ii][0], (double)jt_axes[ii][1], (double)jt_axes[ii][2]);
             dJointSetHingeParam(manip_rev_jts[ii].id(),dParamLoStop, (double)jt_min[ii]);
             dJointSetHingeParam(manip_rev_jts[ii].id(),dParamHiStop, (double)jt_max[ii]);
+            // std::vector<dHingeJoint> manip_rev_jts;
+            // std::vector<dSliderJoint> manip_pris_jts;
+            // std::vector<dHingeJoint> base_rev_jts;
+            // std::vector<dSliderJoint> base_pris_jts;
+
+        }
+        else if (jt_type[ii] == "slider")
+        {
+            manip_pris_jts[ii].create(world);
+            int attach1, attach2;
+
+            attach1 = (int)jt_attach[ii][0]; // Current Joint?
+            attach2 = (int)jt_attach[ii][1]; // Last Joint?
+            if (attach1 == -1 or attach2 == -1)
+            {
+                if (attach1 == -1)
+                {
+                    manip_pris_jts[ii].attach(0, links_arr[attach2]);
+                }
+                else
+                {
+                    manip_pris_jts[ii].attach(links_arr[attach1], 0);
+                }
+            }
+            else
+            {
+                manip_pris_jts[ii].attach(links_arr[attach1], links_arr[attach2]);
+            }
+
+            manip_pris_jts[ii].setAxis((double)jt_axes[ii][0], (double)jt_axes[ii][1], (double)jt_axes[ii][2]);
+            dJointSetSliderParam(manip_pris_jts[ii].id(),dParamLoStop, (double)jt_min[ii]);
+            dJointSetSliderParam(manip_pris_jts[ii].id(),dParamHiStop, (double)jt_max[ii]);
             // std::vector<dHingeJoint> manip_rev_jts;
             // std::vector<dSliderJoint> manip_pris_jts;
             // std::vector<dHingeJoint> base_rev_jts;
@@ -670,7 +1000,26 @@ void Simulator::create_robot()
         }
     }
 
+    if (use_mobile_base == true)
+    {
+        base_pris_jts[0].create(world);
+        base_pris_jts[0].attach(0, body_mobile_base[0]);
+
+        base_pris_jts[0].setAxis(-1.0, 0.0, 0.0);
+
+        dJointSetSliderParam(base_pris_jts[0].id(),dParamLoStop, (double)base_jt_min[0]);
+        dJointSetSliderParam(base_pris_jts[0].id(),dParamHiStop, (double)base_jt_max[0]);
+
+        base_pris_jts[1].create(world);
+        base_pris_jts[1].attach(body_mobile_base[0], body_mobile_base[1]);
+
+        base_pris_jts[1].setAxis(0.0, -1.0, 0.0);
+        dJointSetSliderParam(base_pris_jts[1].id(),dParamLoStop, (double)base_jt_min[1]);
+        dJointSetSliderParam(base_pris_jts[1].id(),dParamHiStop, (double)base_jt_max[1]);
+    }
+
     joints.create();
+
 }
 
 void Simulator::calc_torques()
@@ -680,6 +1029,15 @@ void Simulator::calc_torques()
     {
         torques[ii]=(-k_p[ii]*(q[ii]-jep[ii]) - k_d[ii]*q_dot[ii]);	
     }
+
+    if (use_mobile_base)
+    {
+        for (int ii = 0; ii < 2; ii++)
+        {
+            mobile_base_forces[ii]=(-mobile_base_k_p[ii]*(mobile_base_x[ii]-mobile_base_ep[ii]) - mobile_base_k_d[ii]*mobile_base_x_dot[ii]);	
+        }
+    }
+
     m.unlock();
 }
 
@@ -688,8 +1046,24 @@ void Simulator::set_torques()
     //applying torques to joints
     for (int ii = 0; ii < num_jts ; ii++)
     {
-        manip_rev_jts[ii].addTorque(torques[ii]);
+        if (jts_type[ii] == "hinge")
+        {
+            manip_rev_jts[ii].addTorque(torques[ii]);
+        }
+        else if(jts_type[ii] == "slider")
+        {
+            manip_pris_jts[ii].addForce(torques[ii]);
+        }
     }
+
+    if (use_mobile_base)
+    {
+        for (int ii = 0; ii < 2; ii++)
+        {
+            base_pris_jts[ii].addForce(mobile_base_forces[ii]);
+        }
+    }
+
     // manip_rev_jts[0].addTorque(torques[0]);
     // manip_rev_jts[1].addTorque(torques[1]);
     // manip_rev_jts[2].addTorque(torques[2]);
@@ -833,7 +1207,7 @@ void Simulator::publish_imped_skin_viz()
     impedance_params.k_d.data = k_d;
     m.unlock();
     imped_pub.publish(impedance_params);
-    skin.header.frame_id = "/torso_lift_link";  //"/torso_lift_link";
+    skin.header.frame_id = "/world"; //"/torso_lift_link";
     skin.header.stamp = ros::Time::now();
     skin_pub.publish(skin);
     draw.header.frame_id = "/world";
@@ -848,6 +1222,7 @@ void Simulator::setup_current_taxel_config(hrl_haptic_manipulation_in_clutter_ms
     taxel.header.frame_id = "/world";
     taxel.header.stamp = ros::Time::now();
     std::vector < string > taxel_links;
+    
 
     for (int ii = 0; ii<num_links; ii++)
     {
@@ -861,84 +1236,114 @@ void Simulator::setup_current_taxel_config(hrl_haptic_manipulation_in_clutter_ms
         dVector3 global_pt;
         dVector3 global_n;
 
+        dVector3 local_pt;
+        dVector3 local_n;
+
+        dVector3 base_pt;
+        if (use_mobile_base)
+        {
+          base_pt[0] = 0.0; //mobile_base_pos.data[0];
+          base_pt[1] = 0.0; //mobile_base_pos.data[1];
+          base_pt[2] = 0.0;
+        }
+        else
+        {
+          base_pt[0] = 0.0;
+          base_pt[1] = 0.0;
+          base_pt[2] = 0.0;
+        }
+
+
         while (k < num)
         {
             if (k < 2)
             {
                 dBodyGetRelPointPos(links_arr[ii].id(), link_width/2.0,  0.0, (k/2)*step, global_pt);
-                taxel.centers_x.push_back(global_pt[0]);
-                taxel.centers_y.push_back(global_pt[1]);
-                taxel.centers_z.push_back(global_pt[2]);
+                dVector3Subtract(global_pt,base_pt,local_pt);
+                taxel.centers_x.push_back(local_pt[0]);
+                taxel.centers_y.push_back(local_pt[1]);
+                taxel.centers_z.push_back(local_pt[2]);
                 taxel.link_names.push_back(link_name.str());
                 taxel_links.push_back(link_name.str());
 
                 dBodyGetRelPointPos(links_arr[ii].id(), -link_width/2.0, 0.0, (k/2)*step, global_pt);
-                taxel.centers_x.push_back(global_pt[0]);
-                taxel.centers_y.push_back(global_pt[1]);
-                taxel.centers_z.push_back(global_pt[2]);
+                dVector3Subtract(global_pt,base_pt,local_pt);
+                taxel.centers_x.push_back(local_pt[0]);
+                taxel.centers_y.push_back(local_pt[1]);
+                taxel.centers_z.push_back(local_pt[2]);
                 taxel.link_names.push_back(link_name.str());
                 taxel_links.push_back(link_name.str());
 
                 dBodyVectorToWorld (links_arr[ii].id(), 1.0, 0.0, 0.0, global_n);
-                taxel.normals_x.push_back(global_n[0]);
-                taxel.normals_y.push_back(global_n[1]);
-                taxel.normals_z.push_back(global_n[2]);
+                dVector3Subtract(global_n,base_pt,local_n);
+                taxel.normals_x.push_back(local_n[0]);
+                taxel.normals_y.push_back(local_n[1]);
+                taxel.normals_z.push_back(local_n[2]);
 
                 dBodyVectorToWorld (links_arr[ii].id(), -1.0, 0.0, 0.0, global_n);
-                taxel.normals_x.push_back(global_n[0]);
-                taxel.normals_y.push_back(global_n[1]);
-                taxel.normals_z.push_back(global_n[2]);
+                dVector3Subtract(global_n,base_pt,local_n);
+                taxel.normals_x.push_back(local_n[0]);
+                taxel.normals_y.push_back(local_n[1]);
+                taxel.normals_z.push_back(local_n[2]);
             }
             else
             {
                 dBodyGetRelPointPos(links_arr[ii].id(), link_width/2.0, 0.0, (k/2)*step, global_pt);
-                taxel.centers_x.push_back(global_pt[0]);
-                taxel.centers_y.push_back(global_pt[1]);
-                taxel.centers_z.push_back(global_pt[2]);
+                dVector3Subtract(global_pt,base_pt,local_pt);
+                taxel.centers_x.push_back(local_pt[0]);
+                taxel.centers_y.push_back(local_pt[1]);
+                taxel.centers_z.push_back(local_pt[2]);
                 taxel.link_names.push_back(link_name.str());
                 taxel_links.push_back(link_name.str());
 
                 dBodyGetRelPointPos(links_arr[ii].id(), -link_width/2.0, 0.0, (k/2)*step, global_pt);
-                taxel.centers_x.push_back(global_pt[0]);
-                taxel.centers_y.push_back(global_pt[1]);
-                taxel.centers_z.push_back(global_pt[2]);
+                dVector3Subtract(global_pt,base_pt,local_pt);
+                taxel.centers_x.push_back(local_pt[0]);
+                taxel.centers_y.push_back(local_pt[1]);
+                taxel.centers_z.push_back(local_pt[2]);
                 taxel.link_names.push_back(link_name.str());
                 taxel_links.push_back(link_name.str());
 
 
                 dBodyGetRelPointPos(links_arr[ii].id(), link_width/2.0, 0.0, -(k/2)*step, global_pt);
-                taxel.centers_x.push_back(global_pt[0]);
-                taxel.centers_y.push_back(global_pt[1]);
-                taxel.centers_z.push_back(global_pt[2]);
+                dVector3Subtract(global_pt,base_pt,local_pt);
+                taxel.centers_x.push_back(local_pt[0]);
+                taxel.centers_y.push_back(local_pt[1]);
+                taxel.centers_z.push_back(local_pt[2]);
                 taxel.link_names.push_back(link_name.str());
                 taxel_links.push_back(link_name.str());
 
                 dBodyGetRelPointPos(links_arr[ii].id(), -link_width/2.0, 0.0, -(k/2)*step, global_pt);
-                taxel.centers_x.push_back(global_pt[0]);
-                taxel.centers_y.push_back(global_pt[1]);
-                taxel.centers_z.push_back(global_pt[2]);
+                dVector3Subtract(global_pt,base_pt,local_pt);
+                taxel.centers_x.push_back(local_pt[0]);
+                taxel.centers_y.push_back(local_pt[1]);
+                taxel.centers_z.push_back(local_pt[2]);
                 taxel.link_names.push_back(link_name.str());
                 taxel_links.push_back(link_name.str());
 
                 dBodyVectorToWorld (links_arr[ii].id(), 1.0, 0.0, 0.0, global_n);
-                taxel.normals_x.push_back(global_n[0]);
-                taxel.normals_y.push_back(global_n[1]);
-                taxel.normals_z.push_back(global_n[2]);
+                dVector3Subtract(global_n,base_pt,local_n);
+                taxel.normals_x.push_back(local_n[0]);
+                taxel.normals_y.push_back(local_n[1]);
+                taxel.normals_z.push_back(local_n[2]);
 
                 dBodyVectorToWorld (links_arr[ii].id(), -1.0, 0.0, 0.0, global_n);
-                taxel.normals_x.push_back(global_n[0]);
-                taxel.normals_y.push_back(global_n[1]);
-                taxel.normals_z.push_back(global_n[2]);
+                dVector3Subtract(global_n,base_pt,local_n);
+                taxel.normals_x.push_back(local_n[0]);
+                taxel.normals_y.push_back(local_n[1]);
+                taxel.normals_z.push_back(local_n[2]);
 
                 dBodyVectorToWorld (links_arr[ii].id(), 1.0, 0.0, 0.0, global_n);
-                taxel.normals_x.push_back(global_n[0]);
-                taxel.normals_y.push_back(global_n[1]);
-                taxel.normals_z.push_back(global_n[2]);
+                dVector3Subtract(global_n,base_pt,local_n);
+                taxel.normals_x.push_back(local_n[0]);
+                taxel.normals_y.push_back(local_n[1]);
+                taxel.normals_z.push_back(local_n[2]);
 
                 dBodyVectorToWorld (links_arr[ii].id(), -1.0, 0.0, 0.0, global_n);
-                taxel.normals_x.push_back(global_n[0]);
-                taxel.normals_y.push_back(global_n[1]);
-                taxel.normals_z.push_back(global_n[2]);
+                dVector3Subtract(global_n,base_pt,local_n);
+                taxel.normals_x.push_back(local_n[0]);
+                taxel.normals_y.push_back(local_n[1]);
+                taxel.normals_z.push_back(local_n[2]);
             }
             k = k+2;
         }
@@ -953,79 +1358,91 @@ void Simulator::setup_current_taxel_config(hrl_haptic_manipulation_in_clutter_ms
                 if (k < 2)
                 {
                     dBodyGetRelPointPos(links_arr[ii].id(), (k/2)*step,  0.0, link_length/2.0, global_pt);
-                    taxel.centers_x.push_back(global_pt[0]);
-                    taxel.centers_y.push_back(global_pt[1]);
-                    taxel.centers_z.push_back(global_pt[2]);
+                    dVector3Subtract(global_pt,base_pt,local_pt);
+                    taxel.centers_x.push_back(local_pt[0]);
+                    taxel.centers_y.push_back(local_pt[1]);
+                    taxel.centers_z.push_back(local_pt[2]);
                     taxel.link_names.push_back(link_name.str());
                     taxel_links.push_back(link_name.str());
 
                     dBodyGetRelPointPos(links_arr[ii].id(), (k/2)*step, 0.0, -link_length/2.0, global_pt);
-                    taxel.centers_x.push_back(global_pt[0]);
-                    taxel.centers_y.push_back(global_pt[1]);
-                    taxel.centers_z.push_back(global_pt[2]);
+                    dVector3Subtract(global_pt,base_pt,local_pt);
+                    taxel.centers_x.push_back(local_pt[0]);
+                    taxel.centers_y.push_back(local_pt[1]);
+                    taxel.centers_z.push_back(local_pt[2]);
                     taxel.link_names.push_back(link_name.str());
                     taxel_links.push_back(link_name.str());
 
                     dBodyVectorToWorld (links_arr[ii].id(), 0.0, 0.0, 1.0, global_n);
-                    taxel.normals_x.push_back(global_n[0]);
-                    taxel.normals_y.push_back(global_n[1]);
-                    taxel.normals_z.push_back(global_n[2]);
+                    dVector3Subtract(global_n,base_pt,local_n);
+                    taxel.normals_x.push_back(local_n[0]);
+                    taxel.normals_y.push_back(local_n[1]);
+                    taxel.normals_z.push_back(local_n[2]);
 
                     dBodyVectorToWorld (links_arr[ii].id(), 0.0, 0.0, -1.0, global_n);
-                    taxel.normals_x.push_back(global_n[0]);
-                    taxel.normals_y.push_back(global_n[1]);
-                    taxel.normals_z.push_back(global_n[2]);
+                    dVector3Subtract(global_n,base_pt,local_n);
+                    taxel.normals_x.push_back(local_n[0]);
+                    taxel.normals_y.push_back(local_n[1]);
+                    taxel.normals_z.push_back(local_n[2]);
                 }
                 else
                 {
                     dBodyGetRelPointPos(links_arr[ii].id(), (k/2)*step, 0.0, link_length/2.0, global_pt);
-                    taxel.centers_x.push_back(global_pt[0]);
-                    taxel.centers_y.push_back(global_pt[1]);
-                    taxel.centers_z.push_back(global_pt[2]);
+                    dVector3Subtract(global_pt,base_pt,local_pt);
+                    taxel.centers_x.push_back(local_pt[0]);
+                    taxel.centers_y.push_back(local_pt[1]);
+                    taxel.centers_z.push_back(local_pt[2]);
                     taxel.link_names.push_back(link_name.str());
                     taxel_links.push_back(link_name.str());
 
                     dBodyGetRelPointPos(links_arr[ii].id(), (k/2)*step, 0.0, -link_length/2.0, global_pt);
-                    taxel.centers_x.push_back(global_pt[0]);
-                    taxel.centers_y.push_back(global_pt[1]);
-                    taxel.centers_z.push_back(global_pt[2]);
+                    dVector3Subtract(global_pt,base_pt,local_pt);
+                    taxel.centers_x.push_back(local_pt[0]);
+                    taxel.centers_y.push_back(local_pt[1]);
+                    taxel.centers_z.push_back(local_pt[2]);
                     taxel.link_names.push_back(link_name.str());
                     taxel_links.push_back(link_name.str());
 
 
                     dBodyGetRelPointPos(links_arr[ii].id(), -(k/2)*step, 0.0, link_length/2.0, global_pt);
-                    taxel.centers_x.push_back(global_pt[0]);
-                    taxel.centers_y.push_back(global_pt[1]);
-                    taxel.centers_z.push_back(global_pt[2]);
+                    dVector3Subtract(global_pt,base_pt,local_pt);
+                    taxel.centers_x.push_back(local_pt[0]);
+                    taxel.centers_y.push_back(local_pt[1]);
+                    taxel.centers_z.push_back(local_pt[2]);
                     taxel.link_names.push_back(link_name.str());
                     taxel_links.push_back(link_name.str());
 
                     dBodyGetRelPointPos(links_arr[ii].id(), -(k/2)*step, 0.0, -link_length/2.0, global_pt);
-                    taxel.centers_x.push_back(global_pt[0]);
-                    taxel.centers_y.push_back(global_pt[1]);
-                    taxel.centers_z.push_back(global_pt[2]);
+                    dVector3Subtract(global_pt,base_pt,local_pt);
+                    taxel.centers_x.push_back(local_pt[0]);
+                    taxel.centers_y.push_back(local_pt[1]);
+                    taxel.centers_z.push_back(local_pt[2]);
                     taxel.link_names.push_back(link_name.str());
                     taxel_links.push_back(link_name.str());
 
                     dBodyVectorToWorld (links_arr[ii].id(), 0.0, 0.0, 1.0, global_n);
-                    taxel.normals_x.push_back(global_n[0]);
-                    taxel.normals_y.push_back(global_n[1]);
-                    taxel.normals_z.push_back(global_n[2]);
+                    dVector3Subtract(global_n,base_pt,local_n);
+                    taxel.normals_x.push_back(local_n[0]);
+                    taxel.normals_y.push_back(local_n[1]);
+                    taxel.normals_z.push_back(local_n[2]);
 
                     dBodyVectorToWorld (links_arr[ii].id(), 0.0, 0.0, -1.0, global_n);
-                    taxel.normals_x.push_back(global_n[0]);
-                    taxel.normals_y.push_back(global_n[1]);
-                    taxel.normals_z.push_back(global_n[2]);
+                    dVector3Subtract(global_n,base_pt,local_n);
+                    taxel.normals_x.push_back(local_n[0]);
+                    taxel.normals_y.push_back(local_n[1]);
+                    taxel.normals_z.push_back(local_n[2]);
 
                     dBodyVectorToWorld (links_arr[ii].id(), 0.0, 0.0, 1.0, global_n);
-                    taxel.normals_x.push_back(global_n[0]);
-                    taxel.normals_y.push_back(global_n[1]);
-                    taxel.normals_z.push_back(global_n[2]);
+                    dVector3Subtract(global_n,base_pt,local_n);
+                    taxel.normals_x.push_back(local_n[0]);
+                    taxel.normals_y.push_back(local_n[1]);
+                    taxel.normals_z.push_back(local_n[2]);
 
                     dBodyVectorToWorld (links_arr[ii].id(), 0.0, 0.0, -1.0, global_n);
-                    taxel.normals_x.push_back(global_n[0]);
-                    taxel.normals_y.push_back(global_n[1]);
-                    taxel.normals_z.push_back(global_n[2]);
+                    dVector3Subtract(global_n,base_pt,local_n);
+                    taxel.normals_x.push_back(local_n[0]);
+                    taxel.normals_y.push_back(local_n[1]);
+                    taxel.normals_z.push_back(local_n[2]);
                 }
                 k = k+2;
             }
@@ -1041,78 +1458,90 @@ void Simulator::setup_current_taxel_config(hrl_haptic_manipulation_in_clutter_ms
                 if (k < 2)
                 {
                     dBodyGetRelPointPos(links_arr[ii].id(), 0.0,  0.0, link_length/2.0+radius, global_pt);
-                    taxel.centers_x.push_back(global_pt[0]);
-                    taxel.centers_y.push_back(global_pt[1]);
-                    taxel.centers_z.push_back(global_pt[2]);
+                    dVector3Subtract(global_pt,base_pt,local_pt);
+                    taxel.centers_x.push_back(local_pt[0]);
+                    taxel.centers_y.push_back(local_pt[1]);
+                    taxel.centers_z.push_back(local_pt[2]);
                     taxel.link_names.push_back(link_name.str());
                     taxel_links.push_back(link_name.str());
 
                     dBodyGetRelPointPos(links_arr[ii].id(), 0.0, 0.0, -link_length/2.0-radius, global_pt);
-                    taxel.centers_x.push_back(global_pt[0]);
-                    taxel.centers_y.push_back(global_pt[1]);
-                    taxel.centers_z.push_back(global_pt[2]);
+                    dVector3Subtract(global_pt,base_pt,local_pt);
+                    taxel.centers_x.push_back(local_pt[0]);
+                    taxel.centers_y.push_back(local_pt[1]);
+                    taxel.centers_z.push_back(local_pt[2]);
                     taxel.link_names.push_back(link_name.str());
                     taxel_links.push_back(link_name.str());
 
                     dBodyVectorToWorld (links_arr[ii].id(), 0.0, 0.0, 1.0, global_n);
-                    taxel.normals_x.push_back(global_n[0]);
-                    taxel.normals_y.push_back(global_n[1]);
-                    taxel.normals_z.push_back(global_n[2]);
+                    dVector3Subtract(global_n,base_pt,local_n);
+                    taxel.normals_x.push_back(local_n[0]);
+                    taxel.normals_y.push_back(local_n[1]);
+                    taxel.normals_z.push_back(local_n[2]);
 
                     dBodyVectorToWorld (links_arr[ii].id(), 0.0, 0.0, -1.0, global_n);
-                    taxel.normals_x.push_back(global_n[0]);
-                    taxel.normals_y.push_back(global_n[1]);
-                    taxel.normals_z.push_back(global_n[2]);
+                    dVector3Subtract(global_n,base_pt,local_n);
+                    taxel.normals_x.push_back(local_n[0]);
+                    taxel.normals_y.push_back(local_n[1]);
+                    taxel.normals_z.push_back(local_n[2]);
                 }
                 else
                 {
                     dBodyGetRelPointPos(links_arr[ii].id(), radius*sin(ang_step*(k/2)),  0.0, link_length/2.0+radius*cos(ang_step*(k/2)), global_pt);
-                    taxel.centers_x.push_back(global_pt[0]);
-                    taxel.centers_y.push_back(global_pt[1]);
-                    taxel.centers_z.push_back(global_pt[2]);
+                    dVector3Subtract(global_pt,base_pt,local_pt);
+                    taxel.centers_x.push_back(local_pt[0]);
+                    taxel.centers_y.push_back(local_pt[1]);
+                    taxel.centers_z.push_back(local_pt[2]);
                     taxel.link_names.push_back(link_name.str());
                     taxel_links.push_back(link_name.str());
 
                     dBodyGetRelPointPos(links_arr[ii].id(), radius*sin(ang_step*(k/2)),  0.0, -link_length/2.0-radius*cos(ang_step*(k/2)), global_pt);
-                    taxel.centers_x.push_back(global_pt[0]);
-                    taxel.centers_y.push_back(global_pt[1]);
-                    taxel.centers_z.push_back(global_pt[2]);
+                    dVector3Subtract(global_pt,base_pt,local_pt);
+                    taxel.centers_x.push_back(local_pt[0]);
+                    taxel.centers_y.push_back(local_pt[1]);
+                    taxel.centers_z.push_back(local_pt[2]);
                     taxel.link_names.push_back(link_name.str());
                     taxel_links.push_back(link_name.str());
 
                     dBodyGetRelPointPos(links_arr[ii].id(), radius*sin(-ang_step*(k/2)),  0.0, link_length/2.0+radius*cos(-ang_step*(k/2)), global_pt);
-                    taxel.centers_x.push_back(global_pt[0]);
-                    taxel.centers_y.push_back(global_pt[1]);
-                    taxel.centers_z.push_back(global_pt[2]);
+                    dVector3Subtract(global_pt,base_pt,local_pt);
+                    taxel.centers_x.push_back(local_pt[0]);
+                    taxel.centers_y.push_back(local_pt[1]);
+                    taxel.centers_z.push_back(local_pt[2]);
                     taxel.link_names.push_back(link_name.str());
                     taxel_links.push_back(link_name.str());
 
                     dBodyGetRelPointPos(links_arr[ii].id(), radius*sin(-ang_step*(k/2)),  0.0, -link_length/2.0-radius*cos(-ang_step*(k/2)), global_pt);
-                    taxel.centers_x.push_back(global_pt[0]);
-                    taxel.centers_y.push_back(global_pt[1]);
-                    taxel.centers_z.push_back(global_pt[2]);
+                    dVector3Subtract(global_pt,base_pt,local_pt);
+                    taxel.centers_x.push_back(local_pt[0]);
+                    taxel.centers_y.push_back(local_pt[1]);
+                    taxel.centers_z.push_back(local_pt[2]);
                     taxel.link_names.push_back(link_name.str());
                     taxel_links.push_back(link_name.str());
 
                     dBodyVectorToWorld (links_arr[ii].id(), sin(ang_step*(k/2)), 0.0, cos(ang_step*(k/2)), global_n);
-                    taxel.normals_x.push_back(global_n[0]);
-                    taxel.normals_y.push_back(global_n[1]);
-                    taxel.normals_z.push_back(global_n[2]);
+                    dVector3Subtract(global_n,base_pt,local_n);
+                    taxel.normals_x.push_back(local_n[0]);
+                    taxel.normals_y.push_back(local_n[1]);
+                    taxel.normals_z.push_back(local_n[2]);
 
                     dBodyVectorToWorld (links_arr[ii].id(), sin(ang_step*(k/2)), 0.0, -cos(ang_step*(k/2)), global_n);
-                    taxel.normals_x.push_back(global_n[0]);
-                    taxel.normals_y.push_back(global_n[1]);
-                    taxel.normals_z.push_back(global_n[2]);
+                    dVector3Subtract(global_n,base_pt,local_n);
+                    taxel.normals_x.push_back(local_n[0]);
+                    taxel.normals_y.push_back(local_n[1]);
+                    taxel.normals_z.push_back(local_n[2]);
 
                     dBodyVectorToWorld (links_arr[ii].id(), sin(-ang_step*(k/2)), 0.0, cos(-ang_step*(k/2)), global_n);
-                    taxel.normals_x.push_back(global_n[0]);
-                    taxel.normals_y.push_back(global_n[1]);
-                    taxel.normals_z.push_back(global_n[2]);
+                    dVector3Subtract(global_n,base_pt,local_n);
+                    taxel.normals_x.push_back(local_n[0]);
+                    taxel.normals_y.push_back(local_n[1]);
+                    taxel.normals_z.push_back(local_n[2]);
 
                     dBodyVectorToWorld (links_arr[ii].id(), sin(-ang_step*(k/2)), 0.0, -cos(-ang_step*(k/2)), global_n);
-                    taxel.normals_x.push_back(global_n[0]);
-                    taxel.normals_y.push_back(global_n[1]);
-                    taxel.normals_z.push_back(global_n[2]);
+                    dVector3Subtract(global_n,base_pt,local_n);
+                    taxel.normals_x.push_back(local_n[0]);
+                    taxel.normals_y.push_back(local_n[1]);
+                    taxel.normals_z.push_back(local_n[2]);
                 }
                 k = k+2;
             }
@@ -1255,18 +1684,26 @@ void Simulator::update_taxel_simulation()
         f_ind.push_back(ind_buf);
     }
 
+    // it is better to use other initialization method.
     for (unsigned int k = 0; k < force_taxel.centers_x.size(); k++)
     {
         force_taxel.values_x.push_back(0.0);
         force_taxel.values_y.push_back(0.0);
         force_taxel.values_z.push_back(0.0);
+        force_taxel.contact_cost.push_back(0.0);
     }
+
 
     for (unsigned int j = 0; j <  f_ind.size(); j++)
     {
+//        std::cerr << "f_ind[j] = " << f_ind[j]
+//                  << ", contact_types_list.size() = " << contact_types_list.size() 
+//                  << ", "
+        
         force_taxel.values_x[f_ind[j]] = force_taxel.values_x[f_ind[j]] + skin.forces[j].x;
         force_taxel.values_y[f_ind[j]] = force_taxel.values_y[f_ind[j]] + skin.forces[j].y;
         force_taxel.values_z[f_ind[j]] = force_taxel.values_z[f_ind[j]] + skin.forces[j].z;
+        force_taxel.contact_cost[f_ind[j]] = skin.costs[j];
     }
 
     f_ind.clear();
@@ -1292,6 +1729,7 @@ void Simulator::clear()
     force_taxel.values_y.clear();
     force_taxel.values_z.clear();
     force_taxel.link_names.clear();
+    force_taxel.contact_cost.clear();
 
     proximity_taxel.centers_x.clear();
     proximity_taxel.centers_y.clear();
@@ -1311,9 +1749,10 @@ void Simulator::clear()
     skin.locations.clear();
     skin.forces.clear();
     skin.normals.clear();
+    skin.costs.clear();
     force_grouping.clear();
     force_sign.clear();
-    joints.clear();	
+    joints.clear();
 
     fbnum = 0;
     force_group = 0;
@@ -1323,14 +1762,41 @@ void Simulator::get_joint_data()
 {
     for (int ii = 0; ii < num_jts ; ii++)
     {
-        q[ii] = manip_rev_jts[ii].getAngle();
-        q_dot[ii] = manip_rev_jts[ii].getAngleRate();
+        if (jts_type[ii] == "hinge")
+        {
+            q[ii] = manip_rev_jts[ii].getAngle();
+            q_dot[ii] = manip_rev_jts[ii].getAngleRate();
+        }
+        else if(jts_type[ii] == "slider"){
+            q[ii] = manip_pris_jts[ii].getPosition();
+            q_dot[ii] = manip_pris_jts[ii].getPositionRate();
+        }
+    }
+
+    if (use_mobile_base)
+    {
+        for (int ii = 0; ii < 2 ; ii++)
+        {
+            mobile_base_x[ii] = base_pris_jts[ii].getPosition();
+            mobile_base_x_dot[ii] = base_pris_jts[ii].getPositionRate();
+        }
     }
 
     angles.data = q;
     angle_rates.data = q_dot;
+
+    if (use_mobile_base)
+    {
+        mobile_base_pos.data = mobile_base_x;
+        mobile_base_pos_rates.data = mobile_base_x_dot;
+    }
+
     m.lock();   
     jep_ros.data = jep;
+    if (use_mobile_base)
+    {
+        mobile_base_ep_ros.data = mobile_base_ep;
+    }
     m.unlock();
 }
 
@@ -1343,13 +1809,13 @@ void Simulator::create_movable_obstacles()
     XmlRpc::XmlRpcValue cylinders_dim;
     while (nh_.getParam("/m3/software_testbed/movable_dimen", cylinders_dim) == false)
         sleep(0.1);
-
     XmlRpc::XmlRpcValue cylinders_pos;
     while (nh_.getParam("/m3/software_testbed/movable_position", cylinders_pos) == false)
         sleep(0.1);
-
     while(nh_.getParam("/m3/software_testbed/num_movable", num_used_movable) == false)
         sleep(0.1);
+    XmlRpc::XmlRpcValue obst_IDs;
+    obst_IDs.setSize(num_used_fixed);
 
     XmlRpc::XmlRpcValue cylinders_max_force;     
     bool got_max_force;
@@ -1390,8 +1856,17 @@ void Simulator::create_movable_obstacles()
         geom_cyl->setBody(obstacles[i]);
 
         dJointSetFeedback(plane2d_joint_ids[i], &frict_feedbacks[i].fb);
+        
+        dBodyID current_body_id = obstacles[i].id();
+        
         //obstacles.push_back(obstacle);
+        
+        //movable_obst_ids[i] = obstacles[i].id();
+        //obst_table_ID[i] = (int)(obstacles[i].id());
+        init_contact_table(i, (intptr_t)(obstacles[i].id()), 0);
+        obst_IDs[i] = (int)((intptr_t)(obstacles[i].id()));
     }
+    nh_.setParam("/m3/software_testbed/movable_id", obst_IDs);
 }
 
 void Simulator::create_compliant_obstacles()
@@ -1444,6 +1919,7 @@ void Simulator::create_compliant_obstacles()
 
         geom_cyl = new dCapsule(space, (double)cylinders_dim[i][0], (double)cylinders_dim[i][2]);
         geom_cyl->setBody(compliant_obstacles[i]);
+        dBodyID current_body_id = compliant_obstacles[i].id();
     }
 }
 
@@ -1460,18 +1936,28 @@ void Simulator::create_fixed_obstacles()
     nh_.getParam("/m3/software_testbed/fixed_dimen", fixed_dim);
     XmlRpc::XmlRpcValue fixed_ctype;
     nh_.getParam("/m3/software_testbed/fixed_ctype", fixed_ctype);
-
+    XmlRpc::XmlRpcValue obst_IDs;
+    obst_IDs.setSize(num_used_fixed);
 
     for (int i = 0; i < num_used_fixed; i++)
     {
         dMass m_obst;
-
         dMassSetCapsuleTotal(&m_obst, obstacle_mass, 3,
                 (double)fixed_dim[i][0], (double)fixed_dim[i][2]);
 
         fixed_obstacles[i].create(world);
         fixed_obstacles[i].setPosition((double)fixed_pos[i][0], (double)fixed_pos[i][1], (double)fixed_pos[i][2]);
         fixed_obstacles[i].setMass(&m_obst);
+
+	// It looks temporal code that conflicts with wall type obstacles. 
+        //fixed_joint_ids[i] = dJointCreateFixed(world.id(), 0);
+        //dJointAttach(fixed_joint_ids[i], fixed_obstacles[i].id(), 0);
+        //dJointSetFixed(fixed_joint_ids[i]);
+
+        //dCapsule *geom_fixed;
+        //geom_fixed = new dCapsule(space, (double)fixed_dim[i][0], (double)fixed_dim[i][2]);
+        //geom_fixed->setBody(fixed_obstacles[i]);
+        ////	fixed_obstacles.push_back(fixed_obstacle);
 
         if (static_cast<std::string>(fixed_ctype[i]) == "wall")
         {
@@ -1498,7 +1984,48 @@ void Simulator::create_fixed_obstacles()
             geom_fixed = new dCapsule(space, (double)fixed_dim[i][0], (double)fixed_dim[i][2]);
             geom_fixed->setBody(fixed_obstacles[i]);
         }
-
+        
+        // Add every body id to the contact type map specifying these as rigid.
+        dBodyID current_body_id = fixed_obstacles[i].id();
+        
+        
         //	fixed_obstacles.push_back(fixed_obstacle);
+
+        //fixed_obst_ids[i] = fixed_obstacles[i].id();
+        //obst_table_ID[num_used_movable+i] = (int)(fixed_obstacles[i].id());
+        init_contact_table(num_used_movable+i, (intptr_t)(fixed_obstacles[i].id()), 0);
+        obst_IDs[i] = (int)((intptr_t)(fixed_obstacles[i].id()));
     }
+
+    nh_.setParam("/m3/software_testbed/fixed_id", obst_IDs);
 }
+
+void Simulator::publish_contact_table()
+{
+    contact_table.id.data.clear();
+    contact_table.contact.data.clear();
+     
+    for (int i=0; i<num_used_movable+num_used_fixed; i++)
+    {
+      contact_table.id.data.push_back(i);
+      contact_table.contact.data.push_back(obst_table_contact[i]);
+    }
+
+    contact_table_pub.publish(contact_table);
+}
+
+void Simulator::init_contact_table(int index, int id, int contact)
+{
+    obst_table_ID[index]      = id;
+    obst_table_contact[index] = contact;
+}
+
+double get_wall_clock_time()
+{
+    timeval tim;
+    gettimeofday(&tim, NULL);
+    double t1=tim.tv_sec+(tim.tv_usec/1000000.0);
+    return t1;
+}
+
+

@@ -28,7 +28,7 @@ from visualization_msgs.msg import Marker
 from hrl_haptic_manipulation_in_clutter_msgs.msg import SkinContact
 
 from hrl_haptic_manipulation_in_clutter_msgs.msg import TaxelArray
-from m3skin_ros.msg import TaxelArray as TaxelArray_Meka
+#from m3skin_ros.msg import TaxelArray as TaxelArray_Meka
 from hrl_msgs.msg import FloatArrayBare
 from geometry_msgs.msg import Point
 from geometry_msgs.msg import Vector3
@@ -113,7 +113,7 @@ if __name__ == '__main__':
     rospy.Subscriber('/skin/taxel_array', TaxelArray,
                      taxel_array_cb,
                      callback_args = (sc_pub, tf_lstnr))
-    rospy.Subscriber('/skin/taxel_array_meka', TaxelArray_Meka,
+    rospy.Subscriber('/skin/taxel_array_meka', TaxelArray,
                      taxel_array_cb,
                      callback_args = (sc_pub, tf_lstnr))
     rospy.loginfo('Started taxel_array to skin_contact!')

@@ -15,7 +15,7 @@
 #  http://healthcare-robotics.com/
 
 
-## @package hrl_haptic_mpc
+# @package hrl_haptic_mpc
 # @author Advait Jain
 # @author Charlie Kemp
 # @author Jeff Hawke
@@ -23,9 +23,10 @@
 #
 # This module contains the core mathematics used for the Haptic MPC.
 
-import openopt as pp # python-openopt package is required for the QP solver
+import openopt as pp  # python-openopt package is required for the QP solver
 import itertools as it
-import numpy as np, math
+import numpy as np
+import math
 
 
 # Add an additional quadratic term that attempts to
@@ -53,15 +54,16 @@ import numpy as np, math
 #           delta_tau = K_j * (delta_phi - delta_theta)
 # and
 #           delta_theta = P2 * K_j * delta_phi
-# so 
+# so
 #           delta_tau = K_j * (delta_phi - P2 * K_j * delta_phi)
 #           delta_tau = K_j * (I - P2 * K_j) delta_phi
 #           delta_tau = (K_j - K_j * P2 * K_j) delta_phi
 # which would imply we'd use
 #           (K_j - K_j * P2 * K_j).T * (K_j - K_j * P2 * K_j)
-#D2 = D2 + (jerk_opt_weight * np.identity(m))
+# D2 = D2 + (jerk_opt_weight * np.identity(m))
 def min_jerk_quadratic_matrix(jerk_opt_weight, K_j):
-    return (jerk_opt_weight * K_j.T * K_j)
+    return jerk_opt_weight * K_j.T * K_j
+
 
 # Calculate D2, D3, D4, D5, and D6
 def D_matrices(delta_x_g, delta_f_min, K_j, Rc_l, P3, P4_l):
@@ -81,10 +83,10 @@ def D_matrices(delta_x_g, delta_f_min, K_j, Rc_l, P3, P4_l):
     # D_4 is size n x m = (n x 3n) (3n x m) (m x m)
     # R_ci * P_4i = (1 x 3) (3 x m) = (1 x m)
     # R_ci * P_4i * K_j = (1 x 3) (3 x m) (m x m) = (1 x m)
-    D4 = np.matrix(np.zeros((n,m)))
+    D4 = np.matrix(np.zeros((n, m)))
     for row_num, R_ci, P4_i in it.izip(it.count(), Rc_l, P4_l):
         tmp = R_ci * P4_i * K_j
-        D4[row_num,:] = tmp[:]
+        D4[row_num, :] = tmp[:]
 
     # D_5 = -D_4
     # D_5 is size n x m
@@ -96,6 +98,7 @@ def D_matrices(delta_x_g, delta_f_min, K_j, Rc_l, P3, P4_l):
 
     return D2, D3, D4, D5, D6
 
+
 # Calculate P_0, P_1, P_2, P_3, and P_4
 def P_matrices(J_h, K_j, Kc_l, Jc_l):
     m = K_j.shape[0]
@@ -105,10 +108,10 @@ def P_matrices(J_h, K_j, Kc_l, Jc_l):
     # P_0 is size 3n x m
     P0_l = [K_ci * J_ci for K_ci, J_ci in it.izip(Kc_l, Jc_l)]
 
-    # P_1 = (J_c)^T K_c J_c            
-    # P_1 = (J_c)^T P_0            
+    # P_1 = (J_c)^T K_c J_c
+    # P_1 = (J_c)^T P_0
     # P_1 is size m x m
-    P1 = np.matrix(np.zeros((m,m)))
+    P1 = np.matrix(np.zeros((m, m)))
     for J_ci, P0_i in it.izip(Jc_l, P0_l):
         P1 = P1 + (J_ci.T * P0_i)
 
@@ -116,11 +119,11 @@ def P_matrices(J_h, K_j, Kc_l, Jc_l):
     # P_2 = (P_1 + K_j)^-1
     # P_2 is size m x m
     tmp = P1 + K_j
-    #P2 = np.linalg.inv(tmp)
     # Advait changed the inv to a pseudo-inverse with the hope
     # that it will make things a bit stabler (although nothing
     # bad has happened yet -- July 6, 2011.)
     # Advait copied this from epc_skin_old_code.py on July 19
+    # P2 = np.linalg.inv(tmp)
     P2 = np.linalg.pinv(tmp)
 
     # P_3 = J_h ((J_c)^T K_c J_c + K_j)^-1 K_j
@@ -136,6 +139,7 @@ def P_matrices(J_h, K_j, Kc_l, Jc_l):
 
     return P0_l, P1, P2, P3, P4_l
 
+
 # force_idx_l - index of the forces whose magintudes will be
 # summed up to compute the cost.
 # delta_fg: +ve Scalar (how much to decrease force in the normal direction)
@@ -146,10 +150,10 @@ def force_magnitude_cost_matrices(P4_l, K_j, force_idx_l, Rc_l, delta_fg):
     # interested in. This matrix can then be used by the QP
     # solver.
     #
-    #delta_fc_l = [P4_i*K_j*delta_phi for P4_i in P4_l]
+    # delta_fc_l = [P4_i*K_j*delta_phi for P4_i in P4_l]
     #
-    #delta_fc_large_mag = 0.
-    #for idx in large_force_idx_l:
+    # delta_fc_large_mag = 0.
+    # for idx in large_force_idx_l:
     #    d_fc_large = delta_fc_l[idx]
     #    delta_fc_large_mag += (d_fc_large.T * d_fc_large)[0,0]
 
@@ -172,7 +176,7 @@ def force_magnitude_cost_matrices(P4_l, K_j, force_idx_l, Rc_l, delta_fg):
 # 2012-12-28 JHawke: Changed function definition to take explicit joint limits as an input rather than a kinematics object.
 def joint_limit_bounds(min_q, max_q, v):
     m = v.shape[0]
-   
+
     min_q = (np.matrix(min_q).T)[0:m]
     max_q = (np.matrix(max_q).T)[0:m]
 
@@ -180,6 +184,7 @@ def joint_limit_bounds(min_q, max_q, v):
     delta_q_min = np.minimum(min_q - v, 0.)
 
     return delta_q_min, delta_q_max
+
 
 # Limit max delta_jep to bring jep only to current angles +/- some threshold
 # (don't get too far away from real angles, 'limiting the windup').
@@ -191,129 +196,129 @@ def theta_phi_absolute_difference_bounds(theta, phi, max_diff):
     phi_max_abs = theta + np.maximum(phi - theta, max_diff)
     return phi_min_abs - phi, phi_max_abs - phi
 
-## DEPRECATED:  USE convert_to_qp_posture, with posture weight set to 0, to
-##              recreate this function
-#### Formulate the input parameters as a QP problem for the solver.
-### 2012-12-28 JHawke: Changed the function definition to take joint limit bounds as inputs rather than a kinematics object.
-##def convert_to_qp(J_h, Jc_l, K_j, Kc_l, Rc_l, delta_f_min,
-##                  delta_f_max, phi_curr, delta_x_g, f_n, q,
-##                  min_q, max_q, jerk_opt_weight, max_force_mag):
-##    P0_l, P1, P2, P3, P4_l = P_matrices(J_h, K_j, Kc_l, Jc_l)
-##    D2, D3, D4, D5, D6 = D_matrices(delta_x_g, delta_f_min, K_j, Rc_l,
-##                                    P3, P4_l)
-##    m = K_j.shape[0]
-##    theta_curr = (np.matrix(q).T)[0:m]
-##    delta_theta_min, delta_theta_max = joint_limit_bounds(min_q, max_q, theta_curr)
-##    D7 = P2 * K_j
-##
-##    cost_quadratic_matrices = []
-##    cost_linear_matrices = []
-##
-##    # if some contact forces are above the allowed pushing
-##    # force, add quadratic terms to the cost function to
-##    # decrease this force.
-##    over_max = f_n.A1 > max_force_mag
-##    if over_max.any():
-##        # at least one of the contact forces is over the maximum allowed
-##        idx_l = np.where(over_max)[0].tolist()
-##
-##        # len(idx_l) is used to normalize the weight
-##        # with the number of contacts - otherwise it
-##        # overpowered the other terms and moved quickly
-##        # May want to normalize so that don't use two 
-##        # different for position or position+orientation
-##        if delta_x_g.shape[0] == 3:
-##            weight = 0.0005 / len(idx_l)
-##        elif delta_x_g.shape[0] == 6:
-##            weight = 0.005 / len(idx_l)
-##
-##        qmat, lmat = force_magnitude_cost_matrices(P4_l, K_j, idx_l,
-##                                                   Rc_l, 0.10)
-##        cost_quadratic_matrices.append(qmat*weight)
-##        cost_linear_matrices.append(lmat*weight)
-##
-##    constraint_matrices = [D4, D5]
-##    constraint_vectors = [delta_f_max, D6]
-##
-##    K_j_t = K_j
-##    min_jerk_mat = min_jerk_quadratic_matrix(jerk_opt_weight, K_j_t)
-##
-##    cost_quadratic_matrices += [1. * D2, 1. * min_jerk_mat]
-##    cost_linear_matrices += [1. * D3]
-##
-##    # adding explicit contraint for joint limits.
-##    constraint_matrices.append(D7)
-##    constraint_vectors.append(delta_theta_max)
-##    constraint_matrices.append(-D7)
-##    constraint_vectors.append(-delta_theta_min)
-##
-##    # this section seems to have been added for PR2
-##    # should verify still makes sense for Cody
-##    delta_phi_min, delta_phi_max = joint_limit_bounds(min_q, max_q, phi_curr)
-##    delta_phi_min2, delta_phi_max2 = theta_phi_absolute_difference_bounds(np.matrix(q).T, phi_curr)
-##
-##    lb = np.maximum(delta_phi_min, delta_phi_min2)
-##    ub = np.minimum(delta_phi_max, delta_phi_max2)
-##
-##    max_per_joint_change = math.radians(3.0)# Default = 0.5 deg
-##    lb = np.maximum(lb, -max_per_joint_change)
-##    ub = np.minimum(ub, max_per_joint_change)
-##    # end of section that seems to have been added for PR2
-##
-##
-##    # Allows JEP to go outside joint limits for
-##    # software simulated robot linkage
-##    # DEPRECATED 2013-01-13 J Hawke. NEVER allow the controller outside joint limits or why have them?!
-###    if kinematics.arm_type == 'simulated':
-###        lb = lb * 1000.
-###        ub = ub * 1000.
-##
-##    return cost_quadratic_matrices, cost_linear_matrices, \
-##           constraint_matrices, constraint_vectors, lb, ub
+# DEPRECATED:  USE convert_to_qp_posture, with posture weight set to 0, to
+#              recreate this function
+# # Formulate the input parameters as a QP problem for the solver.
+# # 2012-12-28 JHawke: Changed the function definition to take joint limit bounds as inputs rather than a kinematics object.
+# def convert_to_qp(J_h, Jc_l, K_j, Kc_l, Rc_l, delta_f_min,
+#                  delta_f_max, phi_curr, delta_x_g, f_n, q,
+#                  min_q, max_q, jerk_opt_weight, max_force_mag):
+#    P0_l, P1, P2, P3, P4_l = P_matrices(J_h, K_j, Kc_l, Jc_l)
+#    D2, D3, D4, D5, D6 = D_matrices(delta_x_g, delta_f_min, K_j, Rc_l,
+#                                    P3, P4_l)
+#    m = K_j.shape[0]
+#    theta_curr = (np.matrix(q).T)[0:m]
+#    delta_theta_min, delta_theta_max = joint_limit_bounds(min_q, max_q, theta_curr)
+#    D7 = P2 * K_j
+#
+#    cost_quadratic_matrices = []
+#    cost_linear_matrices = []
+#
+#    # if some contact forces are above the allowed pushing
+#    # force, add quadratic terms to the cost function to
+#    # decrease this force.
+#    over_max = f_n.A1 > max_force_mag
+#    if over_max.any():
+#        # at least one of the contact forces is over the maximum allowed
+#        idx_l = np.where(over_max)[0].tolist()
+#
+#        # len(idx_l) is used to normalize the weight
+#        # with the number of contacts - otherwise it
+#        # overpowered the other terms and moved quickly
+#        # May want to normalize so that don't use two
+#        # different for position or position+orientation
+#        if delta_x_g.shape[0] == 3:
+#            weight = 0.0005 / len(idx_l)
+#        elif delta_x_g.shape[0] == 6:
+#            weight = 0.005 / len(idx_l)
+#
+#        qmat, lmat = force_magnitude_cost_matrices(P4_l, K_j, idx_l,
+#                                                   Rc_l, 0.10)
+#        cost_quadratic_matrices.append(qmat*weight)
+#        cost_linear_matrices.append(lmat*weight)
+#
+#    constraint_matrices = [D4, D5]
+#    constraint_vectors = [delta_f_max, D6]
+#
+#    K_j_t = K_j
+#    min_jerk_mat = min_jerk_quadratic_matrix(jerk_opt_weight, K_j_t)
+#
+#    cost_quadratic_matrices += [1. * D2, 1. * min_jerk_mat]
+#    cost_linear_matrices += [1. * D3]
+#
+#    # adding explicit contraint for joint limits.
+#    constraint_matrices.append(D7)
+#    constraint_vectors.append(delta_theta_max)
+#    constraint_matrices.append(-D7)
+#    constraint_vectors.append(-delta_theta_min)
+#
+#    # this section seems to have been added for PR2
+#    # should verify still makes sense for Cody
+#    delta_phi_min, delta_phi_max = joint_limit_bounds(min_q, max_q, phi_curr)
+#    delta_phi_min2, delta_phi_max2 = theta_phi_absolute_difference_bounds(np.matrix(q).T, phi_curr)
+#
+#    lb = np.maximum(delta_phi_min, delta_phi_min2)
+#    ub = np.minimum(delta_phi_max, delta_phi_max2)
+#
+#    max_per_joint_change = math.radians(3.0)# Default = 0.5 deg
+#    lb = np.maximum(lb, -max_per_joint_change)
+#    ub = np.minimum(ub, max_per_joint_change)
+#    # end of section that seems to have been added for PR2
+#
+#
+#    # Allows JEP to go outside joint limits for
+#    # software simulated robot linkage
+#    # DEPRECATED 2013-01-13 J Hawke. NEVER allow the controller outside joint limits or why have them?!
+# #    if kinematics.arm_type == 'simulated':
+# #        lb = lb * 1000.
+# #        ub = ub * 1000.
+#
+#    return cost_quadratic_matrices, cost_linear_matrices, \
+#           constraint_matrices, constraint_vectors, lb, ub
 
-## Formulate the input parameters as a QP problem for the solver. Now includes posture.
+
+# Formulate the input parameters as a QP problem for the solver. Now includes posture.
 # NB: The P/D matrices don't make a lot of sense without seeing the maths.
 # TODO: Fix this.
 def convert_to_qp_posture(J_h, Jc_l, K_j, Kc_l, Rc_l, delta_f_min,
-                  delta_f_max, phi_curr, delta_x_g, f_n, q,
-                  min_q, max_q, jerk_opt_weight, max_force_mag, delta_theta_des, 
-                  posture_weight, position_weight, orient_weight, force_weight,
-                  force_reduction_goal, q_qdes_diff_limit):
-  
-    ## Apply the pose weights: position & orientation.
+                          delta_f_max, phi_curr, delta_x_g, f_n, q,
+                          min_q, max_q, jerk_opt_weight, max_force_mag, delta_theta_des,
+                          posture_weight, position_weight, orient_weight, force_weight,
+                          force_reduction_goal, q_qdes_diff_limit):
+
+    # Apply the pose weights: position & orientation.
     # These are sqrt'd as the quadratic term takes the form Jh^T * Jh, and the linear is delta_x_g * Jh
     delta_x_g[0:3] = delta_x_g[0:3]*np.sqrt(position_weight)
-    ## delta_x_g[0:3] = np.multiply(delta_x_g[0:3],np.matrix([10.0,1.0,1.0]).T)
+    # delta_x_g[0:3] = np.multiply(delta_x_g[0:3],np.matrix([10.0,1.0,1.0]).T)
     delta_x_g[3:] = delta_x_g[3:]*np.sqrt(orient_weight)
     J_h[0:3] = J_h[0:3] * np.sqrt(position_weight)
-    J_h[3:] = J_h[3:] * np.sqrt(orient_weight)   
-    
-    # Calculate various matrices. These are combinations of Jacobians/stiffness matrices and 
+    J_h[3:] = J_h[3:] * np.sqrt(orient_weight)
+
+    # Calculate various matrices. These are combinations of Jacobians/stiffness matrices and
     # match the maths in the derivation document. They're separated out so they're only
-    # computed once. 
+    # computed once.
     P0_l, P1, P2, P3, P4_l = P_matrices(J_h, K_j, Kc_l, Jc_l)
-    D2, D3, D4, D5, D6 = D_matrices(delta_x_g, delta_f_min, K_j, Rc_l,
-                                    P3, P4_l)
-    
+    D2, D3, D4, D5, D6 = D_matrices(delta_x_g, delta_f_min, K_j, Rc_l, P3, P4_l)
+
     # D2 is the quadratic matrix for the cost function, D3 is the linear.
     # Cost = phi^t D2 phi + D3 phi
-    
+
     # POSE TERM:
     # Cost_pose = | delta_x_g - H * delta_phi |^2
-    #           = (phi^T * Q_pose * phi + L_pose * phi) 
+    #           = (phi^T * Q_pose * phi + L_pose * phi)
     # Q_pose = H^T H
     # L_pose = - 2 * delta_x_g^T * H)
     # where H = J_h * (J_c^T * K_c * J_c + K_j)^-1 * K_j
     # NB: The weight here is applied earlier to the Jacobian and desired goal as it's a weight on position/orientation, not joint angles.
 
     Q_pose = D2
-    L_pose = D3     
-    
+    L_pose = D3
+
 #    print "NEWD2******************"
 #    print Q_pose
 #    print "NEWD3 ***********"
 #    print L_pose
-#    
+#
     # POSTURE TERM:
     # Cost_posture = posture_weight * | delta_theta_d - B * delta_phi |^2
     # Q_posture = B^T B
@@ -322,26 +327,19 @@ def convert_to_qp_posture(J_h, Jc_l, K_j, Kc_l, Rc_l, delta_f_min,
     # B = P2 K_j
 
     B = P2 * K_j
-    Q_posture = posture_weight * B.T * B # Quadratic matrix
-    L_posture = posture_weight * (-2.0 * delta_theta_des.T * B) # Linear matrix
-    
+    Q_posture = posture_weight * B.T * B  # Quadratic matrix
+    L_posture = posture_weight * (-2.0 * delta_theta_des.T * B)  # Linear matrix
+
 #    D2 = Q_pose + Q_posture
 #    D3 = L_pose + L_posture
-    
-    
-    
-    
+
     m = K_j.shape[0]
     theta_curr = (np.matrix(q).T)[0:m]
     delta_theta_min, delta_theta_max = joint_limit_bounds(min_q, max_q, theta_curr)
     D7 = P2 * K_j
 
-
-
-
     cost_quadratic_matrices = []
     cost_linear_matrices = []
-
 
     # FORCE REDUCTION TERM
     # if some contact forces are above the allowed pushing
@@ -355,19 +353,11 @@ def convert_to_qp_posture(J_h, Jc_l, K_j, Kc_l, Rc_l, delta_f_min,
         # len(idx_l) is used to normalize the weight
         # with the number of contacts - otherwise it
         # overpowered the other terms and moved quickly
-        # May want to normalize so that don't use two 
+        # May want to normalize so that don't use two
         # different for position or position+orientation
-        
         weight = force_weight / len(idx_l)
-        
-#        if delta_x_g.shape[0] == 3:
-#            weight = 0.0005 / len(idx_l)
-#            print "using position weight"
-#        elif delta_x_g.shape[0] == 6:
-#            weight = 0.005 / len(idx_l)
 
-        qmat, lmat = force_magnitude_cost_matrices(P4_l, K_j, idx_l,
-                                                   Rc_l, force_reduction_goal)
+        qmat, lmat = force_magnitude_cost_matrices(P4_l, K_j, idx_l, Rc_l, force_reduction_goal)
         cost_quadratic_matrices.append(qmat*weight)
         cost_linear_matrices.append(lmat*weight)
 
@@ -380,7 +370,7 @@ def convert_to_qp_posture(J_h, Jc_l, K_j, Kc_l, Rc_l, delta_f_min,
     # New matrices - merge Q_pose, Q_posture, etc
     cost_quadratic_matrices += [1. * Q_pose, 1. * Q_posture, 1. * min_jerk_mat]
     cost_linear_matrices += [1. * L_pose, 1. * L_posture]
-      
+
     # Original cost matrices
 #    cost_quadratic_matrices += [1. * D2, 1. * min_jerk_mat]
 #    cost_linear_matrices += [1. * D3]
@@ -394,18 +384,15 @@ def convert_to_qp_posture(J_h, Jc_l, K_j, Kc_l, Rc_l, delta_f_min,
     # this section seems to have been added for PR2
     # should verify still makes sense for Cody
     delta_phi_min, delta_phi_max = joint_limit_bounds(min_q, max_q, phi_curr)
-    delta_phi_min2, delta_phi_max2 = theta_phi_absolute_difference_bounds(np.matrix(q).T,
-                                                                          phi_curr,
-                                                                          q_qdes_diff_limit)
+    delta_phi_min2, delta_phi_max2 = theta_phi_absolute_difference_bounds(np.matrix(q).T, phi_curr, q_qdes_diff_limit)
 
     lb = np.maximum(delta_phi_min, delta_phi_min2)
     ub = np.minimum(delta_phi_max, delta_phi_max2)
 
-    max_per_joint_change = math.radians(0.5) #default=0.5 deg
+    max_per_joint_change = math.radians(0.5)  # default=0.5 deg
     lb = np.maximum(lb, -max_per_joint_change)
     ub = np.minimum(ub, max_per_joint_change)
     # end of section that seems to have been added for PR2
-
 
     # Allows JEP to go outside joint limits for
     # software simulated robot linkage
@@ -415,12 +402,11 @@ def convert_to_qp_posture(J_h, Jc_l, K_j, Kc_l, Rc_l, delta_f_min,
 #        lb = lb * 1000.
 #        ub = ub * 1000.
 
-    return cost_quadratic_matrices, cost_linear_matrices, \
-           constraint_matrices, constraint_vectors, lb, ub
+    return cost_quadratic_matrices, cost_linear_matrices, constraint_matrices, constraint_vectors, lb, ub
 
 
-## Set up and solve QP 
-##
+# Set up and solve QP
+#
 # In [3]: pp.QP?
 # Docstring:
 #     QP: constructor for Quadratic Problem assignment
@@ -444,9 +430,9 @@ def convert_to_qp_posture(J_h, Jc_l, K_j, Kc_l, Rc_l, delta_f_min,
 #     A: size m1 x n matrix, subjected to A * x <= b
 #     Aeq: size m2 x n matrix, subjected to Aeq * x = beq
 #     b, beq: vectors of lengths m1, m2
-#     Alternatively to A/Aeq you can use Awhole matrix as it's described 
+#     Alternatively to A/Aeq you can use Awhole matrix as it's described
 #     in LP documentation (or both A, Aeq, Awhole)
-def solve_qp(cost_quadratic_matrices, cost_linear_matrices, 
+def solve_qp(cost_quadratic_matrices, cost_linear_matrices,
              constraint_matrices, constraint_vectors, lb, ub,
              debug_qp, verbose):
     total = np.zeros(cost_quadratic_matrices[0].shape)
@@ -467,15 +453,15 @@ def solve_qp(cost_quadratic_matrices, cost_linear_matrices,
     # iprint: do text output each iprint-th iteration You can
     # use iprint = 0 for final output only or iprint < 0 to
     # omit whole output In future warnings are intended to be
-    # shown if iprint >= -1.  
-    if debug_qp: 
+    # shown if iprint >= -1.
+    if debug_qp:
         iprint_val = 1
     else:
         iprint_val = -1
 
     # Result structure
     # http://openopt.org/OOFrameworkDoc
-    # r = p.solve(nameOfSolver) 
+    # r = p.solve(nameOfSolver)
     # >>> dir(r)
     # ['__doc__', '__module__', 'advanced', 'elapsed',
     # 'evals', 'ff', 'isFeasible', 'istop', 'iterValues',
@@ -489,12 +475,12 @@ def solve_qp(cost_quadratic_matrices, cost_linear_matrices,
     # gets stuck and keeps setting delta_phi=0. Advait also saw
     # this problem in one case (Aug 23, 2011), and copied the next
     # line from the forked_simulation_files folder.
-    #delta_phi_zero = np.matrix(np.random.normal(0.0, 0.003, lb.shape))
-    #delta_phi_zero = np.matrix(np.random.normal(0.0, 0.01, lb.shape))
+    # delta_phi_zero = np.matrix(np.random.normal(0.0, 0.003, lb.shape))
+    # delta_phi_zero = np.matrix(np.random.normal(0.0, 0.01, lb.shape))
 
     try:
         qp = pp.QP(H, f, A=A, b=b, lb=lb, ub=ub)
-        qp.solve('cvxopt_qp', iprint = iprint_val)
+        qp.solve('cvxopt_qp', iprint=iprint_val)
         delta_phi_opt = np.matrix(qp.xf).T
         val_opt = qp.ff
         feasible = qp.isFeasible
@@ -507,8 +493,8 @@ def solve_qp(cost_quadratic_matrices, cost_linear_matrices,
             opt_error = True
             delta_phi_opt = delta_phi_zero
 
-        if np.isnan(delta_phi_opt.sum()): 
-            if verbose:           
+        if np.isnan(delta_phi_opt.sum()):
+            if verbose:
                 print '*****************************************************'
                 print 'ERROR: QP FAILED TO FIND A SOLUTION AND RETURNED NaN(s)'
                 print '*****************************************************'
@@ -523,7 +509,7 @@ def solve_qp(cost_quadratic_matrices, cost_linear_matrices,
 
     except ValueError as inst:
         opt_error = True
-        if verbose:        
+        if verbose:
             print type(inst)     # the exception instance
             print inst.args      # arguments stored in .args
             print inst           # __str__ allows args to printed directly
@@ -535,10 +521,6 @@ def solve_qp(cost_quadratic_matrices, cost_linear_matrices,
         val_opt = np.nan
 
     return delta_phi_opt, opt_error, feasible
-
-
-
-
 
 
 #---------- OLD functions: probably WON'T work anymore ----------------
@@ -558,7 +540,7 @@ def solve_qp(cost_quadratic_matrices, cost_linear_matrices,
 #    elif n_faces <= 12:
 #        polytope_faces = rp.dodecahedron_faces #12 sided polytope
 #    elif n_faces <= 20:
-#        polytope_faces = rp.icosahedron_faces #20 sided polytope 
+#        polytope_faces = rp.icosahedron_faces #20 sided polytope
 #    else:
 #        # should precompute this a single time...
 #        polytope_faces = None
@@ -574,7 +556,3 @@ def solve_qp(cost_quadratic_matrices, cost_linear_matrices,
 #    num_faces, tmp = polytope_faces.shape
 #
 #    return polytope_faces, num_faces
-
-
-
-

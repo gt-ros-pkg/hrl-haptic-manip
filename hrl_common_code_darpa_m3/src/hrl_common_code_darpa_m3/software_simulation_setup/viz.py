@@ -7,6 +7,7 @@
 import sys
 import numpy as np, math
 import matplotlib.pyplot as pp
+from mpl_toolkits.mplot3d import Axes3D as ax3d
 
 import roslib; roslib.load_manifest('hrl_common_code_darpa_m3')
 import hrl_lib.util as ut
@@ -15,34 +16,43 @@ import hrl_lib.matplotlib_util as mpu
 
 # X coordinate of obstacle is along the Y-axis of matplotlib and Y
 # coordinate of the obstacles increase to the left.
-def draw_obstacles(ctype_list, pos_list, dimen_list, color):
+def draw_obstacles(ctype_list, pos_list, dimen_list, color, dim):
     if len(pos_list) == 0:
         return
     pos_arr = np.array(pos_list)
 
     for i in range(len(ctype_list)):
-        cx, cy = -pos_arr[i,1], pos_arr[i,0]
+        cx, cy, cz = -pos_arr[i,1], pos_arr[i,0], pos_arr[i,2]
 
-        if ctype_list[i] == 'wall':
-            # x,y is exchanged
-            length = dimen_list[i][1]
-            width  = dimen_list[i][0]
-            slope  = pos_arr[i,3] 
+        if dim == 2:
+            if ctype_list[i] == 'wall':
+                # x,y is exchanged
+                length = dimen_list[i][1]
+                width  = dimen_list[i][0]
+                slope  = pos_arr[i,3] 
 
-            mpu.plot_rectangle(cx, cy, slope, width, length, color=color)
+                mpu.plot_rectangle(cx, cy, slope, width, length, color=color)
+            else:
+                radius = dimen_list[i][0]
+                mpu.plot_circle(cx, cy, radius, 0., math.pi*2, color=color)    
+                #mpu.plot_circle(cx, cy, rad_arr[i], 0., math.pi*2,
+                #                color='k', linewidth=0.5)
         else:
+            # Spheres
             radius = dimen_list[i][0]
-            mpu.plot_circle(cx, cy, radius, 0., math.pi*2, color=color)    
-            #mpu.plot_circle(cx, cy, rad_arr[i], 0., math.pi*2,
-            #                color='k', linewidth=0.5)
+            ax = pp.gca()
+            ax.scatter(cx, cy, cz, s=20, c=color, linewidth=0.5 )
 
-def draw_obstacles_from_reach_problem_dict(d):
-    draw_obstacles(d['fixed_ctype'], d['fixed_position'], d['fixed_dimen'], color='r')
-    draw_obstacles(d['moveable_ctype'], d['moveable_position'], d['moveable_dimen'], color='#A0A0A0')
+def draw_obstacles_from_reach_problem_dict(d,dim=2):
+    draw_obstacles(d['fixed_ctype'], d['fixed_position'], d['fixed_dimen'], color='r', dim=dim)
+    draw_obstacles(d['moveable_ctype'], d['moveable_position'], d['moveable_dimen'], color='#A0A0A0', dim=dim)
             
-    pp.xlabel('Negative Y-coordinate in the robot\'s frame')
-    pp.ylabel('X-coordinate in the robot\'s frame')
+    pp.xlabel('Negative Y-coordinate in the robot\'s frame', fontsize=10)
+    pp.ylabel('X-coordinate in the robot\'s frame', fontsize=10)
 
+    if dim == 3:
+        pp.ylabel('Z-coordinate in the robot\'s frame', fontsize=10)
+    
 def draw_goal_from_reach_problem_dict(d):
     g = d['goal']
     pp.scatter([-g[1]], [g[0]], s=100, c='g', marker='x', lw=3,

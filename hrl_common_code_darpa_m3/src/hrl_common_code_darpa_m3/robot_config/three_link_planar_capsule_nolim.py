@@ -9,7 +9,7 @@ b_jt_limits_min = np.radians([-150, -162, -159]).tolist()
 
 b_jts = {'anchor':b_jt_anchor, 'axis':b_jt_axis, 'jt_lim_max':b_jt_limits_max,
          'jt_lim_min':b_jt_limits_min, 'jt_init':b_jt_start, 'jt_attach':b_jt_attach,
-         'jt_stiffness':b_jt_kp, 'jt_damping':b_jt_kd}
+         'jt_stiffness':b_jt_kp, 'jt_damping':b_jt_kd, 'jt_type':b_jt_type}
 
 bod_shapes = ['capsule', 'capsule', 'capsule'] 
 
@@ -21,6 +21,15 @@ bod_com_position = [[0., -torso_half_width/2., height],
                     [0., -torso_half_width-upper_arm_length/2., height], 
                     [0., -torso_half_width-upper_arm_length-forearm_length/2.+dia/4, height]]
 
+bod_rotation   = [np.radians([-90.,0.,0.]).tolist(),
+                  np.radians([-90.,0.,0.]).tolist(),
+                  np.radians([-90.,0.,0.]).tolist()]
+
+base_bod_rotation   = [np.radians([-90.,0.,0.]).tolist(),
+                       np.radians([-90.,0.,0.]).tolist(),
+                       np.radians([-90.,0.,0.]).tolist()]
+    
 bodies ={'shapes':bod_shapes, 'dim':bod_dimensions, 'num_links':bod_num_links,
-         'com_pos':bod_com_position, 'mass':bod_mass, 'name':bod_names, 'color':bod_color}
+         'com_pos':bod_com_position, 'mass':bod_mass, 'name':bod_names, 'color':bod_color,
+         'rotation':bod_rotation, 'base_rotation':base_bod_rotation }
 

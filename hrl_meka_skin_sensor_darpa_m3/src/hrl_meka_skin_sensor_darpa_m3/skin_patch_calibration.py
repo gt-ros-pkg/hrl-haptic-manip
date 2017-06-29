@@ -10,7 +10,8 @@ import rospy
 import hrl_lib.util as ut
 import hrl_lib.transforms as tr
 
-from m3skin_ros.msg import TaxelArray
+from hrl_haptic_manipulation_in_clutter_msgs.msg import TaxelArray
+#from m3skin_ros.msg import TaxelArray
 from m3skin_ros.msg import RawTaxelArray
 from m3skin_ros.srv import None_TransformArray
 from m3skin_ros.srv import None_String
@@ -33,7 +34,7 @@ class RawDataClient():
 
     def get_raw_data(self, fresh):
         if fresh:
-            while not self.fresh_data:
+            while not(self.fresh_data) and not(rospy.is_shutdown()):
                 rospy.sleep(0.002)
         with self.lock:
             self.fresh_data = False
@@ -43,7 +44,7 @@ class RawDataClient():
 
 class SkinCalibration():
     def __init__(self):
-        self.ta_pub = rospy.Publisher('taxels/forces', TaxelArray)
+        self.ta_pub = rospy.Publisher('taxels/forces', TaxelArray,queue_size=1)
 
         self.pos_arr = None # Nx3
         self.nrml_arr = None # Nx3
@@ -83,7 +84,7 @@ class SkinCalibration():
         self.pos_arr = np.array(pos_list)
         self.nrml_arr = np.array(nrml_list)
 
-    def publish_taxel_array(self, raw_data):
+    def publish_taxel_array(self, raw_data, slope):
         ta = TaxelArray()
         ta.header.frame_id = self.link_name
         ta.header.stamp = rospy.Time.now()
@@ -96,21 +97,51 @@ class SkinCalibration():
         ta.normals_y = self.nrml_arr[:,1]
         ta.normals_z = self.nrml_arr[:,2]
 
-        min_idx = np.argmin(raw_data)
-        calib_data = self.raw_data_to_force(raw_data)
+        try:
+            min_idx = np.argmin(raw_data)
+        except: 
+            min_idx = 0
+
+        calib_data = self.raw_data_to_force(raw_data, slope)
 
         if self.disable_sensor:
             calib_data[:] = 0.
+        try:
+            ta.values_x = ta.normals_x * calib_data
+            ta.values_y = ta.normals_y * calib_data
+            ta.values_z = ta.normals_z * calib_data
+        except:
+            rospy.logwarn("[%s] unable to calibrate raw data from %s",rospy.get_name(),self.link_name)
+            ta.values_x = [0]*len(ta.normals_x)
+            ta.values_y = [0]*len(ta.normals_x)
+            ta.values_z = [0]*len(ta.normals_x)
 
-        ta.values_x = ta.normals_x * calib_data
-        ta.values_y = ta.normals_y * calib_data
-        ta.values_z = ta.normals_z * calib_data
 
         self.ta_pub.publish(ta)
 
     # implement this function in classes derived from this one.
-    def raw_data_to_force(self, raw_data):
-        raise RuntimeError('Unimplemented function')
+    def raw_data_to_force(self, raw_data, slope):
+         # this might change depending on the pull-up value (e.g.
+         # different pullup values on the PR2 and Cody)
+#         print "got into raw_data_to_force"
+         try:
+#             print "got into trying"
+             #d_biased = self.subtract_bias(raw_data, 0)
+             #calib_data = self.adc_to_force_func(raw_data)
+
+             biased = self.bias_mn - raw_data
+#             print "biased is :\n", biased
+             calib_data = np.array([(2*math.exp(0.02*x))/slope for x in biased])
+#             print 'slope is: ', slope
+#             print "calib is :\n", calib_data
+#             print "got past adc_to_force_func"
+             idxs = (np.where(calib_data < self.max_ignore_value))[0]
+             calib_data[idxs] = 0.
+             return calib_data
+         except ValueError:
+             rospy.logerr('raw_data.shape: '+str(raw_data.shape))
+             rospy.signal_shutdown('Error in the fabric skin driver or calibration node')
+       #raise RuntimeError('Unimplemented function')
 
     # n_std = 0 is the same as no thresholding.
     def subtract_bias(self, data, n_std=0):
@@ -175,16 +206,9 @@ if __name__ == '__main__':
     while not rospy.is_shutdown():
         d = rdc.get_raw_data(True)
         scn.publish_taxel_array(d)
+#        scn.publish_taxel_array(d, opt.slope)
 
     if False:
         ut.get_keystroke('Hit a key to get biased data')
         d = rdc.get_biased_data(False, 5)
         print 'd:', d
-
-
-
-
-
-
-
-

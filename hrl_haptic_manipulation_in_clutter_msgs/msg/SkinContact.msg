@@ -12,6 +12,6 @@ hrl_msgs/FloatArrayBare[] pts_x
 hrl_msgs/FloatArrayBare[] pts_y
 hrl_msgs/FloatArrayBare[] pts_z
 
-
-
+#all the costs (from collision map) that make up one contact cost.
+float64[] costs
 

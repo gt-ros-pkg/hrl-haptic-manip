@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 
 #
 # Publish ADC data over ROS.
@@ -9,10 +9,8 @@
 #
 #
 
-
 import serial
 
-import roslib; roslib.load_manifest('hrl_fabric_based_tactile_sensor')
 import rospy
 from hrl_msgs.msg import FloatArray
 
@@ -20,46 +18,54 @@ from hrl_msgs.msg import FloatArray
 def setup_serial(dev_name, baudrate):
     try:
         serial_dev = serial.Serial(dev_name, timeout=1.)
-        if(serial_dev == None):
-            raise RuntimeError("robotis_servo: Serial port not found!\n")
+        if(serial_dev is None):
+            raise RuntimeError("[%s]: Serial port %s not found!\n" % (rospy.get_name(), dev_name))
 
         serial_dev.setBaudrate(baudrate)
         serial_dev.setParity('N')
         serial_dev.setStopbits(1)
-        serial_dev.open()
+        #serial_dev.open()
 
         serial_dev.flushOutput()
         serial_dev.flushInput()
         return serial_dev
 
-    except (serial.serialutil.SerialException), e:
-        raise RuntimeError("robotis_servo: Serial port not found!\n")
+    except serial.serialutil.SerialException as e:
+        rospy.logwarn("[%s] Error initializing serial port %s", rospy.get_name(), dev_name)
+        return []
+
 
 def get_adc_data(serial_dev, num_adc_inputs):
+    try:
+        ln = serial_dev.readline()
+        try:
+            l = map(int, ln.split(','))
+        
+        except ValueError:
+            rospy.logwarn('[%s] Received suspect data: %s from socket.' % (rospy.get_name(), ln))
+            #rospy.logwarn('Something fishy with line read, not sure what ... getting new data')
+            serial_dev.flush()
+            return []
 
-    ln = serial_dev.readline()
-    l = map(int, ln.split(','))
+        if len(l) != num_adc_inputs:
+            rospy.logwarn('Number of ADC values does not match prescribed number of inputs. Something fishy with the serial port.')
+            serial_dev.flush()
+            return []  # get_adc_data(serial_dev, num_adc_inputs)
+        return l
 
-    # rospy.loginfo(num_adc_inputs)
-    # rospy.loginfo(len(l))
+    except:
+        rospy.logwarn('[%s] Unable to read line. Recommend setup serial again.', rospy.get_name())
+        return [-1]
+        
+
     
-    if len(l) != num_adc_inputs:
-        rospy.logwarn('Number of ADC values does not match prescribed number of inputs. Something fishy with the serial port.')
-        # rospy.loginfo(num_adc_inputs)
-        # rospy.loginfo(len(l))
-        # raise Exception('IN HERE')
-
-        serial_dev.flush()
-        l = get_adc_data(serial_dev, num_adc_inputs)
-    return l
 
 
 if __name__ == '__main__':
-
     dev_name = '/dev/ttyUSB4'
-    #dev_name = '/dev/ttyACM0'
-    #dev_name = '/dev/robot/arduino1'
-    #dev_name = '/dev/robot/arduino2'
+    # dev_name = '/dev/ttyACM0'
+    # dev_name = '/dev/robot/arduino1'
+    # dev_name = '/dev/robot/arduino2'
 
     baudrate = 115200
 
@@ -77,10 +83,9 @@ if __name__ == '__main__':
         fa = FloatArray()
         fa.header.stamp = rospy.Time.now()
         fa.data = get_adc_data(serial_dev, 6)
-        pub.publish(fa)
+        if fa.data == []:
+            rospy.logwarn('Data from taxels was emtpy ...')
+        else:
+            pub.publish(fa)
 
     serial_dev.close()
-
-
-
-

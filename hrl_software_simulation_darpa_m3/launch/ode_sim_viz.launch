@@ -4,8 +4,12 @@ When running in batch mode, launch this to visualize what is currently happening
 -->
 
 <launch>
+    <!-- simulate taxels -->
     <arg name="use_taxels" default="1" />
     <arg name="simulate_ft_sensor_at_link_base" default="0" />
+
+    <!-- have a mobile base in software simulation -->
+    <arg name="mobile_base" default="0" />
 
     <node pkg="hrl_software_simulation_darpa_m3"
         type="draw_bodies.py" output="screen"
@@ -35,5 +39,12 @@ When running in batch mode, launch this to visualize what is currently happening
         </group>
     </group>
 
+    <group unless="$(arg mobile_base)">
+        <!-- Need a static transform between world and torso_lift_link-->
+        <node pkg="tf" name="static_tf_world_torso_broadcaster"
+            type="static_transform_publisher"
+            args="0 0 0 0 0 0 1 world torso_lift_link 100"
+            respawn="false" output="log"/>
+    </group>
 </launch>
 

@@ -22,7 +22,7 @@
 #define ROSTAXELSTRANSFORMNODE_H_
 
 #include <m3skin_ros/RawTaxelArray.h>
-#include <m3skin_ros/TaxelArray.h>
+#include <hrl_haptic_manipulation_in_clutter_msgs/TaxelArray.h>
 
 #include <ros/ros.h>
 #include <geometry_msgs/Transform.h>

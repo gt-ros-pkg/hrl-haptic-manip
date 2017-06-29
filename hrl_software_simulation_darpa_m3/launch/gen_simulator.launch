@@ -11,7 +11,6 @@
 
     <!-- randomly generate obstacles -->
     <arg name="random" default="0" />
-    <arg name="map" default="0" />
 
     <!-- radius of the obstacles -->
     <arg name="radius" default="0.01" />
@@ -22,10 +21,7 @@
     <arg name="n_compliant" default="0" />    
     <arg name="stiffness_value" default="0" />    
 
-    <group unless="$(arg map)" >
-      <!-- If we want to use a predefined map structure, this will be preloaded on the param server.-->
-      <rosparam command="delete" param="m3" />
-    </group>
+    <rosparam command="delete" param="m3" />
     <rosparam command="delete" param="roslaunch" />
 
     <rosparam> 
@@ -43,6 +39,10 @@
         use_prox_sensor: false
       </rosparam>
     </group>
+
+    <rosparam>
+      use_mobile_base: true
+    </rosparam>
 
 
     <!-- use skin taxels here -->
@@ -75,16 +75,12 @@
     <!-- xmin 0.2 xmax 0.9 ymin -0.6 ymax 0.6 -->
     <group if="$(arg random)">
         <node pkg="hrl_common_code_darpa_m3" type="obstacles.py" output="log"
-            name="obstacles" args="--fixed=$(arg n_fixed) --sliding=$(arg n_sliding) --xmin=0.2 --xmax=0.6 --ymin=-0.5 --ymax=0.2 --radius=$(arg radius) --compliant=$(arg n_compliant) --stiffness_value=$(arg stiffness_value)" />
+            name="obstacles" args="--fixed=$(arg n_fixed) --sliding=$(arg n_sliding) --xmin=0.2 --xmax=0.9 --ymin=-0.6 --ymax=0.6 --radius=$(arg radius) --compliant=$(arg n_compliant) --stiffness_value=$(arg stiffness_value)" />
     </group>
-
-    <!--<group if="$(arg map)">
-        <rosparam command="load" file="$(find hrl_traversability_planner)/maps/ode/map1.yaml" />
-    </group> -->
 
     <!-- visualization nodes -->
     <node pkg="hrl_software_simulation_darpa_m3"
-        type="draw_bodies.py" output="screen"
+        type="draw_bodies.py" output="log"
         name="rviz_marker_bodies" respawn='true' />
 
     <group if="$(arg use_taxels)">
@@ -103,7 +99,6 @@
     </group>
 
     <!--<include file='$(find hrl_software_simulation_darpa_m3)/launch/ode_sim_viz.launch'/>-->
-
 
     <group unless="$(arg mobile_base)">
         <!-- Need a static transform between world and torso_lift_link-->

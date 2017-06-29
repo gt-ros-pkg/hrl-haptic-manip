@@ -1,7 +1,4 @@
-
-import roslib; roslib.load_manifest('hrl_fabric_based_tactile_sensor')
 import rospy
-from hrl_msgs.msg import FloatArray
 
 import hrl_lib.util as ut
 
@@ -12,6 +9,7 @@ from geometry_msgs.msg import Transform
 
 from m3skin_ros.srv import None_TransformArray, None_TransformArrayResponse
 from m3skin_ros.srv import None_String
+
 
 class Fabric_Skin_Patch():
     def __init__(self):
@@ -37,7 +35,7 @@ class Fabric_Skin_Patch():
 
     def local_coord_frames_cb(self, req):
         return self.tar
-    
+
     def link_name_cb(self, req):
         return self.link_name
 
@@ -55,7 +53,6 @@ if __name__ == '__main__':
     fsp.link_name = d['tf_name']
     fsp.tar = d['transform_array_response']
 
-
     rospy.Service('/fabric_skin/taxels/srv/local_coord_frames',
                   None_TransformArray, fsp.local_coord_frames_cb)
     rospy.Service('/fabric_skin/taxels/srv/link_name', None_String,
@@ -65,7 +62,7 @@ if __name__ == '__main__':
 
     for i in range(10):
         ln = serial_dev.readline()
-    
+
     rospy.loginfo('Started publishing data')
 
     rta = RawTaxelArray()
@@ -74,5 +71,3 @@ if __name__ == '__main__':
         raw_data_pub.publish(rta)
 
     serial_dev.close()
-
-

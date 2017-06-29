@@ -61,7 +61,7 @@ void RosTaxelsTransformNode::TransformMessage(
 	m3skin_ros::RawTaxelArray filteredMsg = FilterRaw(msg);
 	std::size_t n = filteredMsg.val_z.size();
 
-	m3skin_ros::TaxelArray output_msg;
+	hrl_haptic_manipulation_in_clutter_msgs::TaxelArray output_msg;
 	// Header
 	output_msg.header.frame_id = linkName;
 	output_msg.header.stamp = ros::Time::now();
@@ -201,7 +201,7 @@ void RosTaxelsTransformNode::Init(unsigned calibration_samples) {
     local_coords_client = n.serviceClient<m3skin_ros::None_TransformArray> (local_coord_srv_name.c_str());
     link_name_client = n.serviceClient<m3skin_ros::None_String> (link_name_srv_name.c_str());
 
-	publisher = n.advertise<m3skin_ros::TaxelArray> (
+	publisher = n.advertise<hrl_haptic_manipulation_in_clutter_msgs::TaxelArray> (
 			"/skin_patch_forearm_right/taxels/forces", 1000);
 
 	subscriber = n.subscribe<m3skin_ros::RawTaxelArray> (

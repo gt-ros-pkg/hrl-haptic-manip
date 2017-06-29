@@ -1,9 +1,7 @@
-
-import math, numpy as np
+import math
+import numpy as np
 from enthought.mayavi import mlab
 
-import roslib; roslib.load_manifest('hrl_fabric_based_tactile_sensor')
-roslib.load_manifest('hrl_meka_skin_sensor_darpa_m3')
 import rospy
 
 import hrl_lib.transforms as tr
@@ -30,7 +28,7 @@ def compute_bias(rdc, n):
     rospy.loginfo('started bias computation ...')
     d_list = []
     for i in range(n):
-        d_list.append(rdc.get_raw_data(fresh = True))
+        d_list.append(rdc.get_raw_data(fresh=True))
 
     d_arr = np.row_stack(d_list)
     mn = np.mean(d_arr, 0)
@@ -82,7 +80,7 @@ if __name__ == '__main__':
             tar.data.append(t)
 
         rospy.init_node('fabric_skin_registration_node')
-        
+
         rdc = spc.RawDataClient('/fabric_skin/taxels/raw_data')
         bias_mn, bias_std = compute_bias(rdc, 20)
 
@@ -112,7 +110,3 @@ if __name__ == '__main__':
         d['tf_name'] = tf_link_name
         d['transform_array_response'] = tar
         ut.save_pickle(d, 'taxel_registration_dict.pkl')
-
-
-
-

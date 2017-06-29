@@ -1,19 +1,19 @@
 <launch>
 
     <!-- must specify on command line r or l -->
-    <arg name="arm_to_use"/>
+    <arg name="arm"/>
 
     <!-- slope for the calibration line -->
-    <arg name="gripper_slope" default="18.0"/> <!--20." /> -->
-    <arg name="forearm_slope" default="100.0"/> <!--"30." />-->
-    <arg name="upperarm_slope" default="80." />
+    <arg name="gripper_slope" default="200.0"/> <!--18." /> -->
+    <arg name="forearm_slope" default="350.0"/> <!--"100." />-->
+    <arg name="upperarm_slope" default="50." /> <!--30, 80.-->
     <arg name="fingertip_slope" default="-200." />              <!-- "-300." /> -->
 
     <!-- force magnitude to ignore -->
     <arg name="gripper_threshold" default="1.0" />
-    <arg name="forearm_threshold" default="1.0" />
-    <arg name="upperarm_threshold" default="1." />
-    <arg name="fingertip_threshold" default="1." />
+    <arg name="forearm_threshold" default="1.5" />
+    <arg name="upperarm_threshold" default="1.0" /> <!-- "0.7" />-->
+    <arg name="fingertip_threshold" default="1.0" />
 
     <arg name="ft_input_topic" default="/netft_gravity_zeroing/wrench_zeroed" />
     
@@ -26,19 +26,19 @@
 
     <node name="fingertip_taxels_driver" pkg="hrl_fabric_based_tactile_sensor"
         type="pr2_tactile_sleeve_pps_driver_node.py" output='screen'
-        args='--arm_to_use=$(arg arm_to_use)' >
+        args='--arm=$(arg arm)' >
     </node>
 
 <!-- New launch files - survy -->
 
     <node name="gripper_and_forearm_taxels_driver" pkg="hrl_fabric_based_tactile_sensor"
         type="pr2_tactile_sleeve_gripper_and_forearm_driver_node.py" output='screen'
-        args='--arm_to_use=$(arg arm_to_use)' >
+        args='--arm=$(arg arm)' >
     </node>
 
     <node name="upperarm_taxels_driver" pkg="hrl_fabric_based_tactile_sensor"
         type="pr2_tactile_sleeve_upperarm_driver_node.py" output='screen'
-        args='--arm_to_use=$(arg arm_to_use)' >
+        args='--arm=$(arg arm)' >
     </node>
 
 <!-- survy -->

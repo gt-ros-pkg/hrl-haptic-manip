@@ -2,19 +2,29 @@
 
   <arg name="arm"/>
   <arg name="verbose" default="" />
+  <arg name="namespace" default="/" />
+  <arg name="skin" default="fabric" />
+  <arg name="rviz_teleop" default="true" />
+  <arg name="runstop_safe" default="true" />
+  <arg name="mpc_config" default="$(find hrl_haptic_mpc)/params/mpc_params_pr2.yaml" />
+  <arg name="robot_config" default="$(find hrl_haptic_mpc)/params/pr2_$(arg arm)_config_params.yaml" />
 
+  <group if="$(arg rviz_teleop)" ns="$(arg namespace)">
+      <node name="mpc_teleop" pkg="hrl_haptic_mpc" type="mpc_teleop_rviz" args="-r pr2 -a $(arg arm) --orientation" output="screen"/>
+      <node pkg="pr2_arm_kinematics" type="pr2_arm_kinematics_node" name="pr2_arm_kinematics" output="screen">
+       <param name="tip_name" value="$(arg arm)_wrist_roll_link" />
+       <param name="root_name" value="torso_lift_link" />
+      </node>
+  </group>
 
-  <rosparam command="load" file="$(find hrl_haptic_mpc)/mpc_params_pr2.yaml" />
-  <rosparam command="load" file="$(find hrl_haptic_mpc)/pr2_config_params.yaml" />
+  <group ns="$(arg namespace)">
+      <rosparam command="load" file="$(arg mpc_config)" />
+      <rosparam command="load" file="$(arg robot_config)" />
 
-  <node name="mpc_teleop" pkg="hrl_haptic_mpc" type="mpc_teleop_rviz.py" args="-r pr2 -a $(arg arm) --orientation" output="screen"/>
-  <node pkg="pr2_arm_kinematics" type="pr2_arm_kinematics_node" name="pr2_left_arm_kinematics" output="screen">
-   <param name="tip_name" value="l_wrist_roll_link" />
-   <param name="root_name" value="torso_lift_link" />
-  </node>
-  <node name="waypoint_generator" pkg="hrl_haptic_mpc" type="waypoint_generator.py" args="-r pr2 -s fabric -a $(arg arm)" output="screen"/>
-  <node name="robot_haptic_state" pkg="hrl_haptic_mpc" type="robot_haptic_state_node.py" args="-r pr2 -s fabric -a $(arg arm)" output="screen"/>
-  <node name="haptic_mpc" pkg="hrl_haptic_mpc" type="haptic_mpc.py" args="-r pr2 -a $(arg arm) $(arg verbose)" output="screen"/>
-
+      <node name="waypoint_generator" pkg="hrl_haptic_mpc" type="waypoint_generator" args="-r pr2 -s $(arg skin) -a $(arg arm)" output="screen"/>
+      <node name="robot_haptic_state" pkg="hrl_haptic_mpc" type="robot_haptic_state_node" args="-r pr2 -s $(arg skin) -a $(arg arm)" output="screen"/>
+      <node name="haptic_mpc" pkg="hrl_haptic_mpc" type="haptic_mpc" args="-r pr2 --verbose $(arg verbose)" output="screen"/>
+      <node if="$(arg runstop_safe)" name="runstop_safe_restart" pkg="hrl_haptic_mpc" type="runstop_safe_restart" args="$(arg arm)" output="screen"/>
+  </group>
 
 </launch>

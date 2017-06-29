@@ -12,7 +12,7 @@ from visualization_msgs.msg import Marker
 from visualization_msgs.msg import MarkerArray
 
 from hrl_haptic_manipulation_in_clutter_msgs.msg import TaxelArray
-from m3skin_ros.msg import TaxelArray as TaxelArray_Meka
+#from m3skin_ros.msg import TaxelArray as TaxelArray_Meka
 
 
 def visualize_taxel_array(ta, marker_pub):
@@ -125,7 +125,7 @@ if __name__ == '__main__':
     rospy.Subscriber('/skin/taxel_array', TaxelArray,
                      visualize_taxel_array,
                      callback_args = marker_pub)
-    rospy.Subscriber('/skin/taxel_array_meka', TaxelArray_Meka,
+    rospy.Subscriber('/skin/taxel_array_meka', TaxelArray,
                      visualize_taxel_array,
                      callback_args = marker_pub)
     rospy.loginfo('Started visulizing taxel array!')

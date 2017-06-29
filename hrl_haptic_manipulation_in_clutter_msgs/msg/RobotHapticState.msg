@@ -14,6 +14,7 @@ std_msgs/Float64MultiArray end_effector_jacobian
 std_msgs/Float64MultiArray contact_jacobians
 
 hrl_haptic_manipulation_in_clutter_msgs/TaxelArray[] skins
+hrl_haptic_manipulation_in_clutter_msgs/TaxelArray[] full_skins
 
 
                                                                                

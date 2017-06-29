@@ -14,27 +14,22 @@
 #
 #  http://healthcare-robotics.com/
 
-## @package hrl_haptic_mpc
-# 
+# @package hrl_haptic_mpc
 # @author Jeff Hawke
 # @author Advait Jain
 # @author Marc Killpack
 # @version 0.1
 # @copyright Apache 2.0
 
-import numpy as np, math
-from threading import RLock
-import sys, copy
+import numpy as np
+import copy
 import matplotlib.pyplot as pp
-
-import roslib; roslib.load_manifest('hrl_software_simulation_darpa_m3')
 
 import rospy
 import PyKDL as kdl
 
 from hrl_arm import HRLArm, HRLArmKinematics
 
-import hrl_lib.geometry as hg
 import hrl_lib.kdl_utils as ku
 import hrl_lib.viz as hv
 
@@ -42,14 +37,17 @@ from hrl_msgs.msg import FloatArrayBare
 from visualization_msgs.msg import Marker
 from hrl_haptic_manipulation_in_clutter_msgs.msg import MechanicalImpedanceParams
 
-## Simulation Arm client. 
+# Simulation Arm client.
 # @author Advait Jain
+
+
 class ODESimArm(HRLArm):
+
     def __init__(self, d_robot):
         rospy.loginfo("Loading ODESimArm")
-        kinematics = RobotSimulatorKDL(d_robot) # KDL chain.
+        kinematics = RobotSimulatorKDL(d_robot)  # KDL chain.
         HRLArm.__init__(self, kinematics)
-        
+
         self.joint_names_list = ['link1', 'link2', 'link3']
 
         self.jep_pub = rospy.Publisher('/sim_arm/command/jep', FloatArrayBare)
@@ -65,12 +63,14 @@ class ODESimArm(HRLArm):
         rospy.Subscriber('/sim_arm/jep', FloatArrayBare, self.jep_cb)
         rospy.Subscriber('/sim_arm/joint_impedance', MechanicalImpedanceParams,
                          self.impedance_params_cb)
-        
-        # Set desired joint angle - either through a delta from the current position, or as an absolute value.
-        rospy.Subscriber ("/haptic_mpc/q_des", FloatArrayBare, self.set_ep_ros)
-        rospy.Subscriber ("/haptic_mpc/delta_q_des", FloatArrayBare, self.set_delta_ep_ros)
-        rospy.Subscriber ("/delta_jep_mpc_cvxgen", FloatArrayBare, self.set_delta_ep_ros)
 
+        # Set desired joint angle - either through a delta from the current
+        # position, or as an absolute value.
+        rospy.Subscriber("/haptic_mpc/q_des", FloatArrayBare, self.set_ep_ros)
+        rospy.Subscriber(
+            "/haptic_mpc/delta_q_des", FloatArrayBare, self.set_delta_ep_ros)
+        rospy.Subscriber(
+            "/delta_jep_mpc_cvxgen", FloatArrayBare, self.set_delta_ep_ros)
 
         rospy.sleep(1.)
         rospy.loginfo("Finished loading SimpleArmManger")
@@ -106,18 +106,18 @@ class ODESimArm(HRLArm):
         delta_jep = copy.copy(msg.data)
         if delta_jep is None or len(delta_jep) != len(self.q):
             raise RuntimeError("set_jep value is " + str(delta_jep))
-        
+
         with self.lock:
-          if self.ep == None:
-            self.ep = self.get_joint_angles()
-            
-          #jep = (np.array(self.ep) + np.array(delta_jep)).tolist()
-          self.ep = (np.array(self.ep) + np.array(delta_jep)).tolist()
-          
-          #f = FloatArrayBare(jep)
-          f = FloatArrayBare(self.ep)
-          self.jep_pub.publish(f)
-          self.publish_rviz_markers()
+            if self.ep is None:
+                self.ep = self.get_joint_angles()
+
+            # jep = (np.array(self.ep) + np.array(delta_jep)).tolist()
+            self.ep = (np.array(self.ep) + np.array(delta_jep)).tolist()
+
+            # f = FloatArrayBare(jep)
+            f = FloatArrayBare(self.ep)
+            self.jep_pub.publish(f)
+            self.publish_rviz_markers()
 
     def set_ep(self, jep, duration=0.15):
         f = FloatArrayBare(jep)
@@ -129,10 +129,10 @@ class ODESimArm(HRLArm):
         # publish the CEP marker.
         jep = self.get_ep()
         cep, r = self.kinematics.FK(jep)
-        o = np.matrix([0.,0.,0.,1.]).T
+        o = np.matrix([0., 0., 0., 1.]).T
         cep_marker = hv.single_marker(cep, o, 'sphere',
-                        '/torso_lift_link', color=(0., 0., 1., 1.),
-                        scale = (0.02, 0.02, 0.02), duration=0.)
+                                      '/torso_lift_link', color=(0., 0., 1., 1.),
+                                      scale=(0.02, 0.02, 0.02), duration=0.)
 
         cep_marker.header.stamp = rospy.Time.now()
         self.cep_marker_pub.publish(cep_marker)
@@ -148,6 +148,7 @@ class ODESimArm(HRLArm):
 ##
 # KDL for kinematics etc.
 class RobotSimulatorKDL(HRLArmKinematics):
+
     def __init__(self, d_robot):
         HRLArmKinematics.__init__(self, len(d_robot.b_jt_anchor))
         self.arm_type = "simulated"
@@ -159,21 +160,20 @@ class RobotSimulatorKDL(HRLArmKinematics):
         self.right_ik_v = ik_v
         self.right_ik_p = ik_p
         self.right_jac = jac
-        self.right_tooltip = np.matrix([0.,0.,0.]).T
+        self.right_tooltip = np.matrix([0., 0., 0.]).T
 
         # marc joint limits.
         self.min_jtlim_arr = d_robot.b_jt_limits_min
         self.max_jtlim_arr = d_robot.b_jt_limits_max
-
 
     def create_right_chain(self):
         height = 0.0
         linkage_offset_from_ground = np.matrix([0., 0., height]).T
         self.linkage_offset_from_ground = linkage_offset_from_ground
         self.n_jts = len(self.d_robot.b_jt_anchor)
-        rospy.loginfo("number of joints is :"+str(self.n_jts))
+        rospy.loginfo("number of joints is :" + str(self.n_jts))
 
-        ee_location = self.d_robot.ee_location 
+        ee_location = self.d_robot.ee_location
         b_jt_anchor = self.d_robot.b_jt_anchor
         b_jt_axis = self.d_robot.b_jt_axis
 
@@ -181,7 +181,7 @@ class RobotSimulatorKDL(HRLArmKinematics):
         prev_vec = np.copy(linkage_offset_from_ground.A1)
         n = len(self.d_robot.b_jt_anchor)
 
-        for i in xrange(n-1):
+        for i in xrange(n - 1):
             if b_jt_axis[i][0] == 1 and b_jt_axis[i][1] == 0 and b_jt_axis[i][2] == 0:
                 kdl_jt = kdl.Joint(kdl.Joint.RotX)
             elif b_jt_axis[i][0] == 0 and b_jt_axis[i][1] == 1 and b_jt_axis[i][2] == 0:
@@ -191,35 +191,35 @@ class RobotSimulatorKDL(HRLArmKinematics):
             else:
                 print "can't do off-axis joints yet!!!"
 
-            np_vec = np.array(b_jt_anchor[i+1])
-            diff_vec = np_vec-prev_vec
+            np_vec = np.array(b_jt_anchor[i + 1])
+            diff_vec = np_vec - prev_vec
             prev_vec = np_vec
-            kdl_vec = kdl.Vector(diff_vec[0], diff_vec[1], diff_vec[2])            
+            kdl_vec = kdl.Vector(diff_vec[0], diff_vec[1], diff_vec[2])
             ch.addSegment(kdl.Segment(kdl_jt, kdl.Frame(kdl_vec)))
 
         np_vec = np.copy(ee_location.A1)
-        diff_vec = np_vec-prev_vec
+        diff_vec = np_vec - prev_vec
 
-        if b_jt_axis[n-1][0] == 1 and b_jt_axis[n-1][1] == 0 and b_jt_axis[n-1][2] == 0:
+        if b_jt_axis[n - 1][0] == 1 and b_jt_axis[n - 1][1] == 0 and b_jt_axis[n - 1][2] == 0:
             kdl_jt = kdl.Joint(kdl.Joint.RotX)
-        elif b_jt_axis[n-1][0] == 0 and b_jt_axis[n-1][1] == 1 and b_jt_axis[n-1][2] == 0:
+        elif b_jt_axis[n - 1][0] == 0 and b_jt_axis[n - 1][1] == 1 and b_jt_axis[n - 1][2] == 0:
             kdl_jt = kdl.Joint(kdl.Joint.RotY)
-        elif b_jt_axis[n-1][0] == 0 and b_jt_axis[n-1][1] == 0 and b_jt_axis[n-1][2] == 1:
+        elif b_jt_axis[n - 1][0] == 0 and b_jt_axis[n - 1][1] == 0 and b_jt_axis[n - 1][2] == 1:
             kdl_jt = kdl.Joint(kdl.Joint.RotZ)
         else:
             print "can't do off-axis joints yet!!!"
 
-        kdl_vec = kdl.Vector(diff_vec[0], diff_vec[1], diff_vec[2])            
+        kdl_vec = kdl.Vector(diff_vec[0], diff_vec[1], diff_vec[2])
         ch.addSegment(kdl.Segment(kdl_jt, kdl.Frame(kdl_vec)))
-        
+
         return ch
 
     def create_solvers(self, ch):
-         fk = kdl.ChainFkSolverPos_recursive(ch)
-         ik_v = kdl.ChainIkSolverVel_pinv(ch)
-         ik_p = kdl.ChainIkSolverPos_NR(ch, fk, ik_v)
-         jac = kdl.ChainJntToJacSolver(ch)
-         return fk, ik_v, ik_p, jac
+        fk = kdl.ChainFkSolverPos_recursive(ch)
+        ik_v = kdl.ChainIkSolverVel_pinv(ch)
+        ik_p = kdl.ChainIkSolverPos_NR(ch, fk, ik_v)
+        jac = kdl.ChainJntToJacSolver(ch)
+        return fk, ik_v, ik_p, jac
 
     def FK_kdl(self, q, link_number):
         fk = self.right_fk
@@ -232,9 +232,9 @@ class RobotSimulatorKDL(HRLArmKinematics):
             rospy.loginfo('Could not compute forward kinematics.')
             return None
 
-    ## returns point in torso lift link.
+    # returns point in torso lift link.
     def FK_vanilla(self, q, link_number=None):
-        if link_number == None:
+        if link_number is None:
             link_number = self.n_jts
         link_number = min(link_number, self.n_jts)
 
@@ -249,7 +249,7 @@ class RobotSimulatorKDL(HRLArmKinematics):
         return pos, rot
 
     def kdl_to_list(self, q):
-        if q == None:
+        if q is None:
             return None
         n = self.n_jts
         q_list = [0] * n
@@ -258,7 +258,7 @@ class RobotSimulatorKDL(HRLArmKinematics):
         return q_list
 
     def list_to_kdl(self, q):
-        if q == None:
+        if q is None:
             return None
         n = len(q)
         q_kdl = kdl.JntArray(n)
@@ -266,17 +266,17 @@ class RobotSimulatorKDL(HRLArmKinematics):
             q_kdl[i] = q[i]
         return q_kdl
 
-    ## compute Jacobian at point pos. 
+    # compute Jacobian at point pos.
     # p is in the ground coord frame.
     def jacobian(self, q, pos=None):
-        if pos == None:
+        if pos is None:
             pos = self.FK(q)[0]
 
         v_list = []
         w_list = []
 
-        #ee, r = self.FK(q)
-        #pos = ee
+        # ee, r = self.FK(q)
+        # pos = ee
 
         for i in xrange(self.n_jts):
             p, rot = self.FK_vanilla(q, i)
@@ -293,8 +293,8 @@ class RobotSimulatorKDL(HRLArmKinematics):
         return np.clip(q, self.min_jtlim_arr, self.max_jtlim_arr)
 
     def within_joint_limits(self, q, delta_list=None):
-        if delta_list == None:
-            delta_list = [0]*len(q)
+        if delta_list is None:
+            delta_list = [0] * len(q)
 
         min_arr = self.min_jtlim_arr
         max_arr = self.max_jtlim_arr
@@ -302,7 +302,7 @@ class RobotSimulatorKDL(HRLArmKinematics):
         q_arr = np.array(q)
         d_arr = np.array(delta_list)
 
-        return np.all((q_arr <= max_arr+d_arr, q_arr >= min_arr+d_arr))
+        return np.all((q_arr <= max_arr + d_arr, q_arr >= min_arr + d_arr))
 
     def get_joint_limits(self):
         return self.min_jtlim_arr, self.max_jtlim_arr
@@ -311,25 +311,27 @@ class RobotSimulatorKDL(HRLArmKinematics):
     # flip_xy - x will point up and +ve y will be to the left. This is
     # to match how we look at the arm in rviz.
     def plot_arm(self, q, color, alpha, flip_xy, linewidth=2):
-        pts = [[0.,0.,0.]]
+        pts = [[0., 0., 0.]]
         for i in range(len(q)):
-            p,_ = self.FK(q, i+1)
+            p, _ = self.FK(q, i + 1)
             pts.append(p.A1.tolist())
 
-        pts_2d = np.array(pts)[:,0:2]
+        pts_2d = np.array(pts)[:, 0:2]
         direc_list = (pts_2d[1:] - pts_2d[:-1]).tolist()
 
         for i, d in enumerate(direc_list):
             d_vec = np.matrix(d).T
             d_vec = d_vec / np.linalg.norm(d_vec)
-            w = np.cross(d_vec.A1, np.array([0., 0., 1.])) * 0.03/2
-            x1 = pts_2d[i,0]
-            y1 = pts_2d[i,1]
-            x2 = pts_2d[i+1,0]
-            y2 = pts_2d[i+1,1]
+            w = np.cross(d_vec.A1, np.array([0., 0., 1.])) * 0.03 / 2
+            x1 = pts_2d[i, 0]
+            y1 = pts_2d[i, 1]
+            x2 = pts_2d[i + 1, 0]
+            y2 = pts_2d[i + 1, 1]
 
-            x_data = np.array([x1+w[0], x1-w[0], x2-w[0], x2+w[0], x1+w[0]])
-            y_data = np.array([y1+w[1], y1-w[1], y2-w[1], y2+w[1], y1+w[1]])
+            x_data = np.array(
+                [x1 + w[0], x1 - w[0], x2 - w[0], x2 + w[0], x1 + w[0]])
+            y_data = np.array(
+                [y1 + w[1], y1 - w[1], y2 - w[1], y2 + w[1], y1 + w[1]])
 
             if flip_xy:
                 tmp = y_data
@@ -347,12 +349,9 @@ if __name__ == '__main__':
 
     # test_jep = np.radians([30., 20., 45.])
     test_jep = np.radians(np.zeros(ode_arm.kinematics.n_jts))
-    # test_jep = np.radians([90]*6)    
+    # test_jep = np.radians([90]*6)
     # test_jep = np.radians([0., 0., 0.])
     p, _ = ode_arm.kinematics.FK(test_jep, ode_arm.kinematics.n_jts)
     print 'p:', p.A1
 
     ode_arm.set_ep(test_jep)
-
-
-

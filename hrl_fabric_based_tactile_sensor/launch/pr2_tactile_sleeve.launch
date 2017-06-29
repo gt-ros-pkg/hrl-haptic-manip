@@ -11,7 +11,7 @@
     <node name="upperarm_taxels_driver" pkg="hrl_fabric_based_tactile_sensor"
         type="pr2_tactile_sleeve_driver_node.py" output='screen'
         ns='pr2_fabric_upperarm_sensor'
-        args='--serial_dev=/dev/ttyACM0 --upperarm --arm_to_use=r' >
+        args='--serial_dev=/dev/ttyACM0 --upperarm --arm=r' >
     </node>
 
     <node name="upperarm_taxels_calibration" pkg="hrl_fabric_based_tactile_sensor"

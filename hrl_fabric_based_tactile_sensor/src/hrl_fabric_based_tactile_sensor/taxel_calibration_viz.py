@@ -1,17 +1,18 @@
+#!/usr/bin/env python
 
-import sys, os
-import math, numpy as np
+import sys
+import numpy as np
 import matplotlib.pyplot as pp
-import roslib; roslib.load_manifest('hrl_fabric_based_tactile_sensor')
 
 import hrl_lib.util as ut
 import hrl_lib.matplotlib_util as mpu
+
 
 def min_max_force_min_pressure_to_trigger_pressure_threshold(th, pressure_l, force_l, adc_l):
     p_arr = np.array(pressure_l)
     f_arr = np.array(force_l)
     adc_arr = np.array(adc_l)
-    idxs = np.where(p_arr>th)[0]
+    idxs = np.where(p_arr > th)[0]
     if len(idxs) == 0:
         return None, None, None, None
     adc_thresh = np.min(adc_arr[idxs])
@@ -26,12 +27,13 @@ def min_max_force_min_pressure_to_trigger_pressure_threshold(th, pressure_l, for
 def min_force_to_trigger_threshold(threshold, force_l, adc_l):
     f_arr = np.array(force_l)
     adc_arr = np.array(adc_l)
-    idxs = np.where(f_arr>threshold)[0]
+    idxs = np.where(f_arr > threshold)[0]
     if len(idxs) == 0:
         return None, None
     adc_thresh = np.min(adc_arr[idxs])
     min_force = np.min(f_arr[np.where(adc_arr > adc_thresh)[0]])
     return min_force, adc_thresh
+
 
 def uncertainty_in_force(force_l, adc_l, adc_bin_size):
     min_adc = min(adc_l)
@@ -56,6 +58,7 @@ def uncertainty_in_force(force_l, adc_l, adc_bin_size):
 
     return adc_bin_l, max_f_l, min_f_l
 
+
 def plot_uncertainty_in_force(d, color):
     ft_l = d['ft']
     adc_l = (d['adc_bias'] - np.array(d['adc'])).tolist()
@@ -68,10 +71,11 @@ def plot_uncertainty_in_force(d, color):
     pp.ylabel('max - min of measured FT_z')
     pp.legend()
 
+
 def force_vs_adc_2(d, color):
     ft_l = d['ft']
     adc_l = (d['adc_bias'] - np.array(d['adc'])).tolist()
-    #adc_l = d['adc']
+    # adc_l = d['adc']
 
     f_prev = 0.
     temp_ft_l = []
@@ -80,7 +84,7 @@ def force_vs_adc_2(d, color):
     for i in range(len(ft_l)):
         f = ft_l[i]
         a = adc_l[i]
-        if f>f_prev:
+        if f > f_prev:
             if increasing:
                 temp_ft_l.append(f)
                 temp_adc_l.append(a)
@@ -104,12 +108,13 @@ def force_vs_adc_2(d, color):
     pp.ylabel('FT_z')
     pp.legend()
 
+
 def force_vs_adc(d, color):
     ft_l = d['ft']
     adc_l = (d['adc_bias'] - np.array(d['adc'])).tolist()
-    #adc_l = d['adc']
-    #pp.scatter(adc_l, ft_l, marker='x', color=color,
-                # label='.'.join('/'.join(nm.split('/')[1:]).split('.')[0:-1]))
+    # adc_l = d['adc']
+    # pp.scatter(adc_l, ft_l, marker='x', color=color,
+    # label='.'.join('/'.join(nm.split('/')[1:]).split('.')[0:-1]))
 
     pp.scatter(adc_l, ft_l, marker='x', color=color,
                label=nm.split('/')[-1].split('.')[0])
@@ -119,13 +124,14 @@ def force_vs_adc(d, color):
     pp.legend()
     pp.grid('on')
 
+
 def pressure_vs_adc(d, color):
     ft_l = d['ft']
     adc_l = (d['adc_bias'] - np.array(d['adc'])).tolist()
-    #adc_l = d['adc']
+    # adc_l = d['adc']
     area = d['contact_area']
-    press_l = [f/area *0.001 for f in ft_l]
-#pp.scatter(adc_l, press_l, marker='x', color=color,
+    press_l = [f/area * 0.001 for f in ft_l]
+# pp.scatter(adc_l, press_l, marker='x', color=color,
 #               label='.'.join('/'.join(nm.split('/')[1:]).split('.')[0:-1]))
     pp.scatter(adc_l, press_l, marker='x', color=color,
                label=nm.split('/')[-1].split('.')[0])
@@ -135,16 +141,18 @@ def pressure_vs_adc(d, color):
     pp.legend()
     pp.grid('on')
 
+
 def resistance_from_adc(adc, adc_max, r1, r2):
     if adc_max == adc:
         return 5000.
     return (r1 * adc) / (adc_max - adc) - r2
 
+
 def force_vs_resistance(d, color):
     ft_l = d['ft']
     adc_max = d['adc_bias'] * 1.
     r1 = d['pull_up']
-    r2 = 40. # conductive thread and connection between taxel and thread
+    r2 = 40.  # conductive thread and connection between taxel and thread
     rv_l = [resistance_from_adc(adc, adc_max, r1, r2) for adc in d['adc']]
 
     pp.scatter(rv_l, ft_l, marker='x', color=color,
@@ -155,12 +163,13 @@ def force_vs_resistance(d, color):
     pp.xlim(0, 4000.)
     pp.legend()
 
+
 def pressure_vs_resistivity(d, color):
     ft_l = d['ft']
     area = d['contact_area']
     adc_max = d['adc_bias'] * 1.
     r1 = d['pull_up']
-    r2 = 0. # conductive thread and connection between taxel and thread
+    r2 = 0.  # conductive thread and connection between taxel and thread
     rv_l = [resistance_from_adc(adc, adc_max, r1, r2) for adc in d['adc']]
 
     press_l = [f/(area*1000.) for f in ft_l]
@@ -199,14 +208,14 @@ if __name__ == '__main__':
         mpu.figure()
         for nm, c in zip(nm_l, color_list):
             d = ut.load_pickle(nm)
-            #d['adc_bias']=1023 # For stretching experiments with Sarvagya
+            # d['adc_bias']=1023 # For stretching experiments with Sarvagya
             force_vs_adc(d, c)
-            #force_vs_adc_2(d, c)
-            pp.xlim((0,1000))
-            pp.ylim((-10,80))
+            # force_vs_adc_2(d, c)
+            pp.xlim((0, 1000))
+            pp.ylim((-10, 80))
 
-            print 'ADC bias: %d'%d['adc_bias']
-           
+            print 'ADC bias: %d' % d['adc_bias']
+
 #        mpu.figure()
 #        for nm, c in zip(nm_l, color_list):
 #            d = ut.load_pickle(nm)
@@ -217,7 +226,7 @@ if __name__ == '__main__':
         print 'Min force that will trigger the safety threshold (known contact area)'
         print '====================================================================='
 
-        force_threshold_l = [10., 15., 20., 25., 30. ]
+        force_threshold_l = [10., 15., 20., 25., 30.]
         fig1 = mpu.figure()
         pp.xlabel('Force Threshold')
         pp.ylabel('Min Triggered Force')
@@ -227,17 +236,17 @@ if __name__ == '__main__':
         pp.ylabel('Min Triggered ADC value')
         pp.title('Known Contact Area')
         for nm, c in zip(nm_l, color_list):
-            label='.'.join('/'.join(nm.split('/')[1:]).split('.')[0:-1])
+            label = '.'.join('/'.join(nm.split('/')[1:]).split('.')[0:-1])
             trig_f_l = []
             trig_adc_l = []
             thresh_l = []
             for force_threshold in force_threshold_l:
                 d = ut.load_pickle(nm)
-                #d['adc_bias']=1023 #For stretching experiments with Sarvagya
+                # d['adc_bias']=1023 #For stretching experiments with Sarvagya
                 ft_l = d['ft']
                 adc_l = (d['adc_bias'] - np.array(d['adc'])).tolist()
                 f, a = min_force_to_trigger_threshold(force_threshold, ft_l, adc_l)
-                if f == None:
+                if f is None:
                     continue
                 trig_f_l.append(f)
                 trig_adc_l.append(a)
@@ -265,7 +274,7 @@ if __name__ == '__main__':
             d['pull_up_l'].append(d_t['pull_up'])
             d['adc_l'].append(d_t['adc'])
             d['adc_bias_l'].append(d_t['adc_bias'])
-            #d['adc_bias_l'].append(1023) # For stretching experiments with Sarvagya
+            # d['adc_bias_l'].append(1023) # For stretching experiments with Sarvagya
             d['contact_area_l'].append(d_t['contact_area'])
 
         ut.save_pickle(d, 'combined.pkl')
@@ -275,7 +284,7 @@ if __name__ == '__main__':
         print 'Min force that will trigger the safety threshold (unknown contact area)'
         print '======================================================================='
 
-        force_threshold_l = [10., 15., 20., 25., 30. ]
+        force_threshold_l = [10., 15., 20., 25., 30.]
         fig1 = mpu.figure()
         pp.xlabel('Force Threshold')
         pp.ylabel('Min Triggered Force')
@@ -288,13 +297,13 @@ if __name__ == '__main__':
         ft_l = []
         adc_l = []
         for nm, c in zip(nm_l, color_list):
-            label='.'.join(nm.split('/')[-1].split('.')[0:-1])
+            label = '.'.join(nm.split('/')[-1].split('.')[0:-1])
             trig_f_l = []
             trig_adc_l = []
             thresh_l = []
             for force_threshold in force_threshold_l:
                 d = ut.load_pickle(nm)
-                #d['adc_bias']=1023 #For stretching experiments with Sarvagya
+                # d['adc_bias']=1023 #For stretching experiments with Sarvagya
                 ft_l = []
                 adc_l = []
                 for i in range(len(d['adc_bias_l'])):
@@ -302,7 +311,7 @@ if __name__ == '__main__':
                     bias = d['adc_bias_l'][i]
                     adc_l += (bias - np.array(d['adc_l'][i])).tolist()
                 f, a = min_force_to_trigger_threshold(force_threshold, ft_l, adc_l)
-                if f == None:
+                if f is None:
                     continue
                 trig_f_l.append(f)
                 trig_adc_l.append(a)
@@ -322,7 +331,8 @@ if __name__ == '__main__':
         print '======================================================================='
 
         pressure_threshold_l = [50000., 100000, 150000., 200000.,
-                250000., 300000., 350000., 400000., 450000., 500000. ]
+                                250000., 300000., 350000., 400000.,
+                                450000., 500000.]
         fig1 = mpu.figure()
         pp.xlabel('Force Threshold')
         pp.ylabel('Min Triggered Force and max permitted force')
@@ -339,7 +349,7 @@ if __name__ == '__main__':
         ft_l = []
         adc_l = []
         for nm, c in zip(nm_l, color_list):
-            label='.'.join(nm.split('/')[-1].split('.')[0:-1])
+            label = '.'.join(nm.split('/')[-1].split('.')[0:-1])
             trig_f_min_l = []
             trig_f_max_l = []
             trig_p_l = []
@@ -347,7 +357,7 @@ if __name__ == '__main__':
             thresh_l = []
             for th in pressure_threshold_l:
                 d = ut.load_pickle(nm)
-                #d['adc_bias']=1023 #For stretching experiments with Sarvagya
+                # d['adc_bias']=1023 #For stretching experiments with Sarvagya
                 ft_l = []
                 pressure_l = []
                 adc_l = []
@@ -360,7 +370,7 @@ if __name__ == '__main__':
                     adc_l += (bias - np.array(d['adc_l'][i])).tolist()
 
                 f_min, f_max, p_min, a = min_max_force_min_pressure_to_trigger_pressure_threshold(th, pressure_l, ft_l, adc_l)
-                if f_min == None:
+                if f_min is None:
                     continue
 
                 trig_f_min_l.append(f_min)
@@ -382,9 +392,6 @@ if __name__ == '__main__':
         pp.figure(fig3.number)
         pp.legend()
 
-
-
-
 #    mpu.figure()
 #    for nm, c in zip(nm_l, color_list):
 #        d = ut.load_pickle(nm)
@@ -399,10 +406,7 @@ if __name__ == '__main__':
         mpu.figure()
         for nm, c in zip(nm_l, color_list):
             d = ut.load_pickle(nm)
-            #d['adc_bias']=1023 #For stretching experiments with Sarvagya
+            # d['adc_bias']=1023 #For stretching experiments with Sarvagya
             pressure_vs_adc(d, c)
 
     pp.show()
-
-
-

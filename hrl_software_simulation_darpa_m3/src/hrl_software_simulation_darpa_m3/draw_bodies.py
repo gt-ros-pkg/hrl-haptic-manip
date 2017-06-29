@@ -70,8 +70,13 @@ class DrawAll:
         self.links_rot = []
         self.obst_pos = []
         self.obst_rot = []
-        self.draw_obstacles = ds.SceneDraw("sim/viz/obstacles", "/torso_lift_link")
-        self.draw_links = ds.SceneDraw("sim/viz/linkage", "/torso_lift_link")
+
+        # Changed frames for a mobile base.
+        #self.draw_obstacles = ds.SceneDraw("sim/viz/obstacles", "/torso_lift_link")
+        ## self.draw_links = ds.SceneDraw("sim/viz/linkage", "/torso_lift_link")
+        self.draw_obstacles = ds.SceneDraw("sim/viz/obstacles", "/world")
+        self.draw_links = ds.SceneDraw("sim/viz/linkage", "/world")
+        
         self.color_active = [0, 1, 0, 1]
         self.color_limit = [1, 0, 0, 1]
         self.color_passive = [0, 0, 1, 1]

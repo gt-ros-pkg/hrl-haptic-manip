@@ -14,13 +14,12 @@
 #
 #  http://healthcare-robotics.com/
 
-# Author: Marc Killpack, Advait Jain, Philip Grice
+# Author: Marc Killpack, Advait Jain, Phillip Grice
 
-import numpy as np, math
-from threading import RLock, Timer
-import sys, copy
+import numpy as np
+import sys
+import copy
 
-import roslib; roslib.load_manifest('hrl_haptic_mpc')
 import rospy
 import tf
 
@@ -29,17 +28,19 @@ from sensor_msgs.msg import JointState
 from visualization_msgs.msg import Marker
 
 from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
-from std_msgs.msg import Empty
 
 from equilibrium_point_control.hrl_arm import HRLArm
 from pykdl_utils.kdl_kinematics import create_kdl_kin
 from hrl_msgs.msg import FloatArrayBare
 import hrl_lib.viz as hv
 
+QUEUE_SIZE=100
+
+
 class URDFArm(HRLArm):
 
     def __init__(self, arm, tf_listener=None, base_link=None, end_link=None):
-        if not arm in ['l', 'r']:
+        if arm not in ['l', 'r']:
             raise Exception, 'Arm should be "l" or "r"'
 
         if base_link is None:
@@ -54,54 +55,62 @@ class URDFArm(HRLArm):
         else:
             self.end_link = end_link
 
-        kinematics = create_kdl_kin(self.base_link, self.end_link)
+        kinematics = create_kdl_kin(self.base_link, self.end_link, description_param="/robot_description")
         HRLArm.__init__(self, kinematics)
         self.joint_names_list = kinematics.get_joint_names()
         self.arm_efforts = None
         self.delta_jep = None
 
         try:
-            self.kp = [rospy.get_param('/'+arm+'_arm_controller/gains/'+nm+'/p') for nm in self.joint_names_list]
+            self.kp = [rospy.get_param(
+                '/' + arm + '_arm_controller/gains/' + nm + '/p') for nm in self.joint_names_list]
         except:
             rospy.logerr("kp is not on param server. Exiting...")
             sys.exit(1)
 
         try:
-            self.kd = [rospy.get_param('/'+arm+'_arm_controller/gains/'+nm+'/d') for nm in self.joint_names_list]
+            self.kd = [rospy.get_param(
+                '/' + arm + '_arm_controller/gains/' + nm + '/d') for nm in self.joint_names_list]
         except:
             rospy.logerr("kd is not on param server. Exiting...")
             sys.exit(1)
 
         rospy.Subscriber('/joint_states', JointState, self.joint_states_cb)
 
-        # Set desired joint angle - either through a delta from the current position, or as an absolute value.
-        rospy.Subscriber ("haptic_mpc/q_des", FloatArrayBare, self.set_ep_callback)
-        rospy.Subscriber ("haptic_mpc/delta_q_des", FloatArrayBare, self.set_delta_ep_callback)
-        #rospy.Subscriber("/delta_jep_mpc_cvxgen", FloatArrayBare, self.set_ep_callback)
+        # Set desired joint angle - either through a delta from the current
+        # position, or as an absolute value.
+        rospy.Subscriber(
+            "haptic_mpc/q_des", FloatArrayBare, self.set_ep_callback)
+        rospy.Subscriber(
+            "haptic_mpc/delta_q_des", FloatArrayBare, self.set_delta_ep_callback)
+        # rospy.Subscriber("/delta_jep_mpc_cvxgen", FloatArrayBare, self.set_ep_callback)
 
-        self.marker_pub = rospy.Publisher('/'+arm+'_arm/viz/markers', Marker)
+        self.marker_pub = rospy.Publisher(
+            '/' + arm + '_arm/viz/markers', Marker, queue_size=QUEUE_SIZE)
         self.cep_marker_id = 1
 
         try:
-          if tf_listener == None:
-            self.tf_lstnr = tf.TransformListener()
-          else:
-            self.tf_lstnr = tf_listener
-        except rospy.ServiceException, e:
-          rospy.loginfo("ServiceException caught while instantiating a TF listener. This seems to be normal.")
-          pass
+            if tf_listener is None:
+                self.tf_lstnr = tf.TransformListener()
+            else:
+                self.tf_lstnr = tf_listener
+        except rospy.ServiceException:
+            rospy.loginfo(
+                "ServiceException caught while instantiating a TF listener. This seems to be normal.")
+            pass
 
-        self.joint_angles_pub = rospy.Publisher('/'+arm+'_arm_controller/command',
-                                                JointTrajectory)
+        self.joint_angles_pub = rospy.Publisher('/' + arm + '_arm_controller/command',
+                                                JointTrajectory, queue_size=QUEUE_SIZE)
     ##
     # Callback for /joint_states topic. Updates current joint
     # angles and efforts for the arms constantly
     # @param data JointState message recieved from the /joint_states topic
+
     def joint_states_cb(self, data):
         arm_angles = []
         arm_efforts = []
         arm_vel = []
-        jt_idx_list = [0]*len(self.joint_names_list)
+        jt_idx_list = [0] * len(self.joint_names_list)
         for i, jt_nm in enumerate(self.joint_names_list):
             jt_idx_list[i] = data.name.index(jt_nm)
 
@@ -133,7 +142,7 @@ class URDFArm(HRLArm):
 
     def set_delta_ep_callback(self, msg):
         delta_jep = msg.data
-        if self.ep == None:
+        if self.ep is None:
             self.ep = self.get_joint_angles()
         des_jep = (np.array(self.ep) + np.array(delta_jep)).tolist()
         self.set_ep(des_jep)
@@ -145,67 +154,66 @@ class URDFArm(HRLArm):
     def wrap_angles(self, q):
         for ind in [4, 6]:
             while q[ind] < -np.pi:
-                q[ind] += 2*np.pi
+                q[ind] += 2 * np.pi
             while q[ind] > np.pi:
-                q[ind] -= 2*np.pi
+                q[ind] -= 2 * np.pi
         return q
 
     def publish_rviz_markers(self):
         # publish the CEP marker.
-        o = np.matrix([0.,0.,0.,1.]).T
+        o = np.matrix([0., 0., 0., 1.]).T
         jep = self.get_ep()
         cep, r = self.kinematics.FK(jep)
         cep_marker = hv.single_marker(cep, o, 'sphere',
-                        self.base_link, color=(0., 0., 1., 1.),
-                        scale = (0.02, 0.02, 0.02), duration=0.,
-                        m_id=1)
+                                      self.base_link, color=(0., 0., 1., 1.),
+                                      scale=(0.02, 0.02, 0.02), duration=0.,
+                                      m_id=1)
         cep_marker.header.stamp = rospy.Time.now()
         self.marker_pub.publish(cep_marker)
 
         q = self.get_joint_angles()
         ee, r = self.kinematics.FK(q)
         ee_marker = hv.single_marker(ee, o, 'sphere',
-                        self.base_link, color=(0., 1., 0., 1.),
-                        scale = (0.02, 0.02, 0.02), duration=0.,
-                        m_id=2)
+                                     self.base_link, color=(0., 1., 0., 1.),
+                                     scale=(0.02, 0.02, 0.02), duration=0.,
+                                     m_id=2)
         ee_marker.header.stamp = rospy.Time.now()
         self.marker_pub.publish(ee_marker)
 
 
-## if __name__ == '__main__':
-##     rospy.init_node('pr2_arms_test')
-##     robot = URDFArm('l')
+# if __name__ == '__main__':
+# rospy.init_node('pr2_arms_test')
+#     robot = URDFArm('l')
 
-##     if False:
-##         jep = [0.] * len(robot.joint_names_list) 
-##         jep = np.radians([-30, 0, -90, -60, 0, 0, 0])
-##         rospy.loginfo('Going to home location.')
-##         raw_input('Hit ENTER to go')
-##         robot.set_ep(jep, duration=2.)
+# if False:
+#         jep = [0.] * len(robot.joint_names_list)
+#         jep = np.radians([-30, 0, -90, -60, 0, 0, 0])
+#         rospy.loginfo('Going to home location.')
+#         raw_input('Hit ENTER to go')
+#         robot.set_ep(jep, duration=2.)
 
-##     if True:
-##         # simple go_jep example
-##         roslib.load_manifest('equilibrium_point_control')
-##         import equilibrium_point_control.epc as epc
-##         epcon = epc.EPC(robot)
+# if True:
+# simple go_jep example
+# roslib.load_manifest('equilibrium_point_control')
+#         import equilibrium_point_control.epc as epc
+#         epcon = epc.EPC(robot)
 
-##         while robot.get_joint_angles() == None:
-##             rospy.sleep(0.1)
+# while robot.get_joint_angles() is None:
+# rospy.sleep(0.1)
 
-##         q = robot.get_joint_angles()
-##         robot.set_ep(q)
+#         q = robot.get_joint_angles()
+# robot.set_ep(q)
 
-##         jep = [0.] * len(robot.joint_names_list)
-##         #jep = np.radians([30, 0, 90, -60, -180, -30, 0])  # for left arm
-##         #jep = np.radians([-30, 0, -90, -60, 0, 0, 0]) # for right arm
-##         epcon.go_jep(jep, speed=math.radians(10.))
+#         jep = [0.] * len(robot.joint_names_list)
+# jep = np.radians([30, 0, 90, -60, -180, -30, 0])  # for left arm
+# jep = np.radians([-30, 0, -90, -60, 0, 0, 0]) # for right arm
+#         epcon.go_jep(jep, speed=np.radians(10.))
 
-##     if True:
-##         while robot.get_joint_angles() == None:
-##             rospy.sleep(0.1)
+# if True:
+# while robot.get_joint_angles() is None:
+# rospy.sleep(0.1)
 
-##         q = robot.get_joint_angles()
-##         ee, r = robot.kinematics.FK(q)
-##         print "ee is at :\n", ee
-##         print "r is :\n", r
-
+#         q = robot.get_joint_angles()
+#         ee, r = robot.kinematics.FK(q)
+# print "ee is at :\n", ee
+# print "r is :\n", r

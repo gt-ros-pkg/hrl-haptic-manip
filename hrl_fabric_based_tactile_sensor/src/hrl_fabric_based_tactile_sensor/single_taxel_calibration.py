@@ -1,9 +1,5 @@
+import numpy as np
 
-import sys
-import math, numpy as np
-
-import roslib; roslib.load_manifest('hrl_fabric_based_tactile_sensor')
-roslib.load_manifest('force_torque')
 import rospy
 
 from hrl_msgs.msg import FloatArray
@@ -69,7 +65,7 @@ if __name__ == '__main__':
         while rospy.get_time() < t1:
             rospy.sleep(0.02)
             adc_l.append(adc_value)
-            ft_l.append(ft_client.read()[2,0])
+            ft_l.append(ft_client.read()[2, 0])
 
         d = {}
         d['adc'] = adc_l
@@ -87,13 +83,11 @@ if __name__ == '__main__':
         d = ut.load_pickle('taxel_ft_calib_data.pkl')
         ft_l = d['ft']
         adc_l = (d['adc_bias'] - np.array(d['adc'])).tolist()
-        
+
         print np.max(ft_l)
-    
+
         mpu.figure()
         pp.scatter(adc_l, ft_l, marker='x')
         pp.xlabel('ADC bias - ADC')
         pp.ylabel('FT_z')
         pp.show()
-
-

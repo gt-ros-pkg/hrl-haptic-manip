@@ -1,0 +1,7 @@
+<Robot name="three_link_planar_capsule" file="three_link_planar_capsule.rounded.dae">
+  <Manipulator name="right_arm">
+    <base>base_link</base>
+    <effector>tool_link</effector>
+  </Manipulator>
+</Robot>
+

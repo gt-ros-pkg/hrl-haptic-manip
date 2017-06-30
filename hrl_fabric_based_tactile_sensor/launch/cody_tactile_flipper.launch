@@ -1,0 +1,46 @@
+
+<launch>
+    <arg name="flipper_slope" default="30." />
+
+    <include file="$(find cody)/cody.machine" />
+
+    <node name="flipper_tip_taxels_driver" pkg="hrl_fabric_based_tactile_sensor"
+        type="cody_tactile_flipper_driver_node.py" output='screen'
+        ns='fabric_flipper_tip_sensor'
+        args='--serial_dev=/dev/ttyUSB0 --tip'
+        >
+    </node>
+
+    <node name="flipper_mid_taxels_driver" pkg="hrl_fabric_based_tactile_sensor"
+        type="cody_tactile_flipper_driver_node.py" output='screen'
+        ns='fabric_flipper_mid_sensor'
+        args='--serial_dev=/dev/ttyUSB1 --mid'
+        >
+    </node>
+
+    <node name="flipper_connector_taxels_driver" pkg="hrl_fabric_based_tactile_sensor"
+        type="cody_tactile_flipper_driver_node.py" output='screen'
+        ns='fabric_flipper_connector_sensor'
+        args='--serial_dev=/dev/ttyUSB2 --connector'
+        >
+    </node>
+
+    <node name="flipper_tip_taxels_calibration" pkg="hrl_fabric_based_tactile_sensor"
+        type="fabric_skin_calibration_node.py" output='screen'
+        args='--slope=$(arg flipper_slope)' ns='fabric_flipper_tip_sensor' >
+    </node>
+
+    <node name="flipper_mid_taxels_calibration" pkg="hrl_fabric_based_tactile_sensor"
+        type="fabric_skin_calibration_node.py" output='screen'
+        args='--slope=$(arg flipper_slope)' ns='fabric_flipper_mid_sensor' >
+    </node>
+
+    <node name="flipper_connector_taxels_calibration" pkg="hrl_fabric_based_tactile_sensor"
+        type="fabric_skin_calibration_node.py" output='screen'
+        args='--slope=$(arg flipper_slope)' ns='fabric_flipper_connector_sensor' >
+    </node>
+
+    <include file='$(find hrl_fabric_based_tactile_sensor)/launch/cody_tactile_flipper_viz.launch' />
+
+</launch>
+

@@ -1,0 +1,6 @@
+#!/usr/bin/env python
+
+from hrl_common_code_darpa_m3.visualization.viz import main
+
+if __name__ == '__main__':
+    main()

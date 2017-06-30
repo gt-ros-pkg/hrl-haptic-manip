@@ -1,0 +1,9 @@
+
+<launch>
+
+    <node name="base_taxels_viz" pkg="m3skin_viz"
+        type="m3skin_viz" output='screen' ns='pr2_fabric_base_sensor'>
+    </node>
+
+</launch>
+

@@ -1,0 +1,49 @@
+<package>
+  <name>hrl_haptic_mpc</name>
+  <version>0.0.0</version>
+  <description>Model Predictive Controller that uses feedback from whole-arm
+        tactile sensing to reach to a goal location while controlling
+        contact forces across the entire arm.
+        
+        The code in this package is a heavy refactoring and
+        improvement of the code originally written while developing
+        the controller as detailed in this publication: "Reaching in
+        Clutter with Whole-Arm Tactile Sensing", International Journal
+        of Robotics Research, 2013.
+
+        The authors of the first revision of the code were Advait
+        Jain, Marc D. Killpack, and Prof. Charlie Kemp (advisor and
+        co-author).</description>
+  <maintainer email="Phillip.Grice@gatech.edu">Phillip Grice</maintainer>
+
+  <license>Dual Licence: Apache 2.0</license>
+  <license>New BSD</license>
+
+  <url type="website">http://ros.org/wiki/hrl_haptic_mpc</url>
+
+  <author>Jeff Hawke</author>
+  <author>Phillip Grice</author>
+  <author>Marc Killpack</author>
+  <author>Advait Jain</author>
+  <author>Advisor and Co-author: Prof. Charlie Kemp. </author>
+
+  <!-- Dependencies which this package needs to build itself. -->
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <!-- Dependencies needed to compile this package. -->
+
+  <!-- Dependencies needed after this package is compiled. -->
+  <run_depend>rospy</run_depend>
+  <run_depend>std_msgs</run_depend>
+  <run_depend>geometry_msgs</run_depend>
+  <run_depend>trajectory_msgs</run_depend>
+  <run_depend>interactive_markers</run_depend>
+  <run_depend>hrl_lib</run_depend>
+  <run_depend>hrl_haptic_manipulation_in_clutter_msgs</run_depend>
+  <run_depend>hrl_haptic_manipulation_in_clutter_srvs</run_depend>
+  <run_depend>pykdl_utils</run_depend>
+  <run_depend>moveit_msgs</run_depend>
+  <run_depend>pr2_controllers_msgs</run_depend>
+  <run_depend>hrl_cody_arms</run_depend>
+
+</package>

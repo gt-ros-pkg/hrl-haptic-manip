@@ -1,0 +1,6 @@
+#!/usr/bin/env python
+
+from hrl_haptic_mpc.mpc_teleop_rviz_head import main
+
+if __name__ == '__main__':
+    main()

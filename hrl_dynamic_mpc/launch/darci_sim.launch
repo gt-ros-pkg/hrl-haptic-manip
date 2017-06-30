@@ -1,0 +1,27 @@
+<launch>
+    <node name="run_controller_pp"
+          pkg="hrl_dynamic_mpc"
+          type="run_controller_pp.py"
+          output="screen"
+          args="--darci_sim --arm l --noverbose" />
+
+    <node name="waypoint_generator"
+        pkg="hrl_dynamic_mpc"
+        type="waypoint_generator.py"
+        output="screen"
+        args="-r darci_sim -a l" />
+
+
+
+    <!--node name="mpc_teleop_rviz"
+        pkg="hrl_haptic_mpc"
+        type="mpc_teleop_rviz.py"
+        output="screen"
+        args="-r darci -a l" /-->
+
+    <!--node name="rviz_darci_sim_teleop"
+        pkg="rviz"
+        type="rviz"
+        output="screen" /-->
+
+</launch>

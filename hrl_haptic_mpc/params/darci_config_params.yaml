@@ -1,0 +1,22 @@
+haptic_mpc:
+    darci:
+        # Skin topic lists. Each should be publishing a TaxelArray message
+        skin_list:
+          none: []
+          fabric: ['/forearmor_tactile_sensor/taxels/forces', '/flipper_tactile_sensor/taxels/forces']
+
+        # Frames used for TF. torso_frame is the one the arm is attached to, inertial frame is to get the torso position in the world
+        torso_frame: '/zlift_link'
+        inertial_frame: '/dummy_1'
+        end_effector_frame: '/end_effector_LEFT'
+
+        # Joint limits.
+        # Should be equal in number and in the same order as the number of links in the arm (eg 7 for the PR2, starting at the shoulder). 
+        # Should be specified in DEGREES.
+        joint_limits:
+          right:
+            max: [200, 150, 85, 133, 195, 30, 30]
+            min: [-80, -25, -85, 0, -20, -30, -30]
+          left:
+            max: [200, 25, 85, 133, 20, 30, 30]
+            min: [-80, -150, -85, 0, -195, -30, -30]

@@ -1,0 +1,18 @@
+haptic_mpc:
+    # Skin topic list. Each must publish a TaxelArray message
+    skin_list:
+      sim: ['/skin/taxel_array', '/haptic_mpc/simulation/proximity/taxel_array']
+      none: []
+
+  #  wp_goal_tf_frame: '/world'
+    torso_frame: '/torso_lift_link'
+    inertial_frame: '/world'
+
+    jep_start: [deg(-45.0)]
+    planar: true
+
+    # Joint limits, degrees
+    joint_limits: 
+      max: [180.0]
+      min: [-180.0]
+

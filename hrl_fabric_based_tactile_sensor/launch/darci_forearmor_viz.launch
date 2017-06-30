@@ -1,0 +1,17 @@
+
+<launch>
+
+    <node name="forearmor_front_taxels_viz" pkg="m3skin_viz"
+        type="m3skin_viz" output='screen' ns='fabric_forearmor_front_sensor'>
+    </node>
+
+    <node name="forearmor_back_taxels_viz" pkg="m3skin_viz"
+        type="m3skin_viz" output='screen' ns='fabric_forearmor_back_sensor'>
+    </node>
+
+    <node name="forearmor_edge_taxels_viz" pkg="m3skin_viz"
+        type="m3skin_viz" output='screen' ns='fabric_forearmor_edge_sensor'>
+    </node>
+
+</launch>
+

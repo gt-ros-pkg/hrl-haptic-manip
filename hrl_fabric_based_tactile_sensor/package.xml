@@ -1,0 +1,28 @@
+<package>
+  <name>hrl_fabric_based_tactile_sensor</name>
+  <version>0.0.0</version>
+  <description>hrl_fabric_based_tactile_sensor</description>
+  <maintainer email="deric.park@gatech.edu">Daehyung Park</maintainer>
+
+  <license>BSD</license>
+
+  <url type="website">http://ros.org/wiki/hrl_fabric_based_tactile_sensor</url>
+
+  <author>Advait Jain, Advisor: Prof. Charles C. Kemp. Healthcare Robotics Lab, Georgia Tech</author>
+
+  <!-- Dependencies which this package needs to build itself. -->
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <!-- Dependencies needed to compile this package. -->
+  <build_depend>hrl_meka_skin_sensor_darpa_m3</build_depend>
+  <build_depend>m3skin_ros</build_depend>
+  <build_depend>m3skin_viz</build_depend>
+
+  <!-- Dependencies needed after this package is compiled. -->
+  <run_depend>hrl_meka_skin_sensor_darpa_m3</run_depend>
+  <run_depend>hrl_common_code_darpa_m3</run_depend>
+  <run_depend>m3skin_ros</run_depend>
+  <run_depend>m3skin_viz</run_depend>
+  <run_depend>rospy</run_depend>
+
+</package>

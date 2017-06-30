@@ -1,0 +1,28 @@
+<launch>
+    <arg name="noskin" default="false"/>
+    <arg if="$(arg noskin)" name="ctrl_args" value="--darci --t_impulse=8.0 --ignore_skin" />
+    <arg unless="$(arg noskin)" name="ctrl_args" value="--darci --t_impulse=8.0" />
+
+    <include file="$(find meka_description)/gtt_viz.launch" />
+
+    <node name="joint_collect_pub" pkg="meka_description"
+        type="joint_collect_pub_gtt.py" output='screen' />
+
+    <node name="mpc_teleop_rviz" pkg="hrl_haptic_mpc"
+          type="mpc_teleop_rviz.py" output="screen"
+          args="-r darci -a l " />
+
+    <node name="run_controller"
+        pkg="hrl_dynamic_mpc"
+        type="run_controller_pose.py"
+        output="screen"
+        args="$(arg ctrl_args)" />
+
+    <node name="run_controller_posture"
+        pkg="hrl_dynamic_mpc"
+        type="run_controller_posture.py"
+        output="screen"
+        args="$(arg ctrl_args)" />
+
+</launch>
+

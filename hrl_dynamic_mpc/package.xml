@@ -1,0 +1,58 @@
+<package>
+  <name>hrl_dynamic_mpc</name>
+  <version>0.0.0</version>
+  <description>hrl_dynamic_mpc</description>
+  <maintainer email="deric.park@gatech.edu">Daehyung Park Advisor: Prof. Charlie Kemp.
+      Healthcare Robotics Lab, Georgia Tech</maintainer>
+
+  <license>BSD</license>
+
+  <url type="website">http://ros.org/wiki/hrl_dynamic_mpc</url>
+
+  <author>Marc Killpack</author>
+
+  <!-- Dependencies which this package needs to build itself. -->
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <!-- Dependencies needed to compile this package. -->
+  <build_depend>message_generation</build_depend>
+  <build_depend>rospy</build_depend>
+  <build_depend>geometry_msgs</build_depend>
+  <build_depend>hrl_lib</build_depend>
+  <build_depend>sensor_msgs</build_depend>
+  <build_depend>kdl</build_depend>
+  <build_depend>equilibrium_point_control</build_depend>
+  <build_depend>hrl_cody_arms</build_depend>
+  <build_depend>hrl_haptic_manipulation_in_clutter_msgs</build_depend>
+  <build_depend>hrl_haptic_manipulation_in_clutter_srvs</build_depend>
+  <build_depend>hrl_common_code_darpa_m3</build_depend>
+  <build_depend>m3skin_ros</build_depend>
+
+  <!-- Dependencies needed after this package is compiled. -->
+  <run_depend>message_runtime</run_depend>
+  <run_depend>rospy</run_depend>
+  <run_depend>geometry_msgs</run_depend>
+  <run_depend>hrl_lib</run_depend>
+  <run_depend>sensor_msgs</run_depend>
+  <run_depend>kdl</run_depend>
+  <run_depend>equilibrium_point_control</run_depend>
+  <run_depend>hrl_cody_arms</run_depend>
+  <run_depend>hrl_haptic_manipulation_in_clutter_msgs</run_depend>
+  <run_depend>hrl_haptic_manipulation_in_clutter_srvs</run_depend>
+  <run_depend>hrl_common_code_darpa_m3</run_depend>
+  <run_depend>m3skin_ros</run_depend>
+
+  <!-- Dependencies needed only for running tests. -->
+  <!-- <test_depend>rospy</test_depend> -->
+  <!-- <test_depend>geometry_msgs</test_depend> -->
+  <!-- <test_depend>hrl_lib</test_depend> -->
+  <!-- <test_depend>sensor_msgs</test_depend> -->
+  <!-- <test_depend>kdl</test_depend> -->
+  <!-- <test_depend>equilibrium_point_control</test_depend> -->
+  <!-- <test_depend>hrl_cody_arms</test_depend> -->
+  <!-- <test_depend>hrl_haptic_manipulation_in_clutter_msgs</test_depend> -->
+  <!-- <test_depend>hrl_haptic_manipulation_in_clutter_srvs</test_depend> -->
+  <!-- <test_depend>hrl_common_code_darpa_m3</test_depend> -->
+  <!-- <test_depend>m3skin_ros</test_depend> -->
+
+</package>

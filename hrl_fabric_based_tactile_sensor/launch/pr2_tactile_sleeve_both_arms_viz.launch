@@ -1,0 +1,21 @@
+
+<launch>
+
+    <node name="l_forearm_taxels_viz" pkg="m3skin_viz"
+        type="m3skin_viz" output='screen' ns='pr2_fabric_l_forearm_sensor'>
+    </node>
+
+	<node name="r_forearm_taxels_viz" pkg="m3skin_viz"
+        type="m3skin_viz" output='screen' ns='pr2_fabric_r_forearm_sensor'>
+    </node>
+
+    <node name="l_upperarm_taxels_viz" pkg="m3skin_viz"
+        type="m3skin_viz" output='screen' ns='pr2_fabric_l_upperarm_sensor'>
+    </node>
+
+	<node name="r_upperarm_taxels_viz" pkg="m3skin_viz"
+        type="m3skin_viz" output='screen' ns='pr2_fabric_r_upperarm_sensor'>
+    </node>
+
+</launch>
+

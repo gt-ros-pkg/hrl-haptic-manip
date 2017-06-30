@@ -1,0 +1,34 @@
+<launch>
+
+    <!-- slope for the calibration line -->
+	<arg name="base_slope" default="300." /> 
+
+
+    <!-- force magnitude to ignore -->
+	<arg name="base_threshold" default=".75" />
+ 
+
+
+
+<!-- Edited launch files - Josh -->
+
+    <node name="base_taxels_driver" pkg="hrl_fabric_based_tactile_sensor"
+        type="pr2_tactile_sleeve_base_driver_node.py" output='screen'
+        args='--arm=base' >
+    </node>
+
+
+
+<!-- Calibration Nodes -->
+
+    <node name="base_taxels_calibration" pkg="hrl_fabric_based_tactile_sensor"
+        type="fabric_skin_calibration_node.py" output='screen'
+        ns='pr2_fabric_base_sensor'
+        args='--slope=$(arg base_slope) --miv=$(arg base_threshold)' >
+    </node>
+
+
+    <include file='$(find hrl_fabric_based_tactile_sensor)/launch/pr2_tactile_sleeve_base_viz.launch' />
+
+</launch>
+

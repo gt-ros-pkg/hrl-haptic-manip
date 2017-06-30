@@ -1,0 +1,61 @@
+<launch>
+
+    <!-- slope for the calibration line -->
+	<arg name="blue_forearm_slope" default="400"/> <!--"100." />-->
+    <arg name="blue_upperarm_slope" default="200." /> <!--30, 80.-->
+    <arg name="gray_forearm_slope" default="350.0"/> <!--"100." />-->
+    <arg name="gray_upperarm_slope" default="300." /> <!--30, 80.-->
+
+
+    <!-- force magnitude to ignore -->
+	<arg name="blue_forearm_threshold" default="2" />
+    <arg name="blue_upperarm_threshold" default="2.75" /> 
+    <arg name="gray_forearm_threshold" default="1.75" />
+    <arg name="gray_upperarm_threshold" default="1.25" /> 
+
+
+
+<!-- Edited launch files - Josh -->
+
+    <node name="upperarm_and_forearm_taxels_driver" pkg="hrl_fabric_based_tactile_sensor"
+        type="pr2_tactile_sleeve_upperarm_and_forearm_driver_node.py" output='screen'
+        args='--arm=l --skin=blue' >
+    </node>
+
+    <node name="upperarm_and_forearm_taxel_driver" pkg="hrl_fabric_based_tactile_sensor"
+        type="pr2_tactile_sleeve_upperarm_and_forearm_driver_node.py" output='screen'
+        args='--arm=r --skin=gray' >
+    </node>
+
+<!-- Calibration Nodes -->
+
+    <node name="l_upperarm_taxels_calibration" pkg="hrl_fabric_based_tactile_sensor"
+        type="fabric_skin_calibration_node.py" output='screen'
+        ns='pr2_fabric_l_upperarm_sensor'
+        args='--slope=$(arg blue_upperarm_slope) --miv=$(arg blue_upperarm_threshold)' >
+    </node>
+
+    <node name="l_forearm_taxels_calibration" pkg="hrl_fabric_based_tactile_sensor"
+        type="fabric_skin_calibration_node.py" output='screen'
+        ns='pr2_fabric_l_forearm_sensor'
+        args='--slope=$(arg blue_forearm_slope) --miv=$(arg blue_forearm_threshold)' >
+    </node>
+
+    <node name="r_upperarm_taxels_calibration" pkg="hrl_fabric_based_tactile_sensor"
+        type="fabric_skin_calibration_node.py" output='screen'
+        ns='pr2_fabric_r_upperarm_sensor'
+        args='--slope=$(arg gray_upperarm_slope) --miv=$(arg gray_upperarm_threshold)' >
+    </node>
+
+    <node name="r_forearm_taxels_calibration" pkg="hrl_fabric_based_tactile_sensor"
+        type="fabric_skin_calibration_node.py" output='screen'
+        ns='pr2_fabric_r_forearm_sensor'
+        args='--slope=$(arg gray_forearm_slope) --miv=$(arg gray_forearm_threshold)' >
+    </node>
+
+
+
+    <include file='$(find hrl_fabric_based_tactile_sensor)/launch/pr2_tactile_sleeve_both_arms_viz.launch' />
+
+</launch>
+

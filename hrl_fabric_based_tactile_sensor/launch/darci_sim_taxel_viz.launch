@@ -1,0 +1,40 @@
+
+<launch>
+
+    <node name="bicep_LEFT_taxels_viz" 
+          pkg="hrl_gazebo_m3skin_viz"
+          type="hrl_gazebo_m3skin_viz"
+          output='screen'
+          ns='bicep_LEFT_tactile_sensor'>
+    </node>
+
+    <node name="elbowclevis_LEFT_taxels_viz" 
+          pkg="hrl_gazebo_m3skin_viz"
+          type="hrl_gazebo_m3skin_viz"
+          output='screen'
+          ns='elbowclevis_LEFT_tactile_sensor'>
+    </node>
+
+    <node name="wrist_LEFT_taxels_viz" 
+          pkg="hrl_gazebo_m3skin_viz"
+          type="hrl_gazebo_m3skin_viz"
+          output='screen'
+          ns='wrist_LEFT_tactile_sensor'>
+    </node>
+
+    <node name="handmount_LEFT_taxels_viz" 
+          pkg="hrl_gazebo_m3skin_viz"
+          type="hrl_gazebo_m3skin_viz"
+          output='screen'
+          ns='handmount_LEFT_tactile_sensor'>
+    </node>
+
+    <!--node name="flipper_taxels_viz" 
+          pkg="hrl_gazebo_m3skin_viz"
+          type="hrl_gazebo_m3skin_viz"
+          output='screen'
+          ns='flipper_tactile_sensor'>
+    </node-->
+
+</launch>
+

@@ -1,0 +1,109 @@
+# Produced by CVXGEN, 2013-12-03 15:00:46 -0500.
+# CVXGEN is Copyright (C) 2006-2012 Jacob Mattingley, jem@cvxgen.com.
+# The code in this file is Copyright (C) 2006-2012 Jacob Mattingley.
+# CVXGEN, or solvers produced by CVXGEN, cannot be used for commercial
+# applications without prior written permission from Jacob Mattingley.
+
+# Filename: description.cvxgen.
+# Description: A description of the CVXGEN problem.
+
+dimensions
+  task_xyz = 3
+  task_posture = 7 #size of task space - x,y in plane, 3 for x,y,z; 7 for posture control
+  m = 7  # inputs.
+  n = 7  # states.
+  T = 2 # controller horizon (+1)
+  Ty = 3 # prediction horizon (+T+1)
+  n_c = 10 # of contacts
+end
+
+parameters
+  alpha nonnegative
+  beta nonnegative
+  zeta nonnegative
+  mu nonnegative
+  kappa nonnegative
+  xyz_weight nonnegative
+  posture_weight nonnegative
+  delta_x_des (task_xyz)
+  delta_q_des (task_posture) # desired joint configuration
+  A_tl(n,n)
+  A_tr(n,n)
+  A_bl(n,n)
+  A_br(n,n)
+  B_t1(n, n)
+  B_t2(n, m)
+  B_t3(n, n)
+  B_b1(n, n)
+  B_b2(n, m)
+  B_b3(n, n)
+
+  #qd_max (n) nonnegative
+  torque_max (n) nonnegative
+  torque_min (n)
+  u_max (n) nonnegative
+  q_min_nom (n)
+  q_max_nom (n)
+  q_min (n)
+  q_max (n)
+  delta_f_max (n_c)
+  #delta_cont_vel_max (n_c)
+  n_K_J_all(n_c,n)
+  #delta_rate_f_max (n_c)
+  #n_J_all(n_c,n)
+  #n_K_J_over(n_c,n)
+  #delta_f_des(n_c)
+  all_J_T_K_J(n,n)
+  J (task_xyz,n)
+  #vel_norm_J(1,n)
+  #J_T_K_J[num](n,n), num=1..n_c
+  #f_max_delta_t (n)
+  tau_max_delta_t (n)
+  mass (n,n) psd
+  Kp (n,n) psd
+  Kd (n,n) psd
+  #vel_norm_J (3,n)
+
+  q_des_cur[0] (m)
+  qd[0] (n)
+  q[0] (n)
+  #f_cur (n_c)
+  #contact_J[num] (3, n), num=1..n_c
+  tau_cont_sum[0] (n)
+end
+
+variables
+  q[t] (n), t=1..T+Ty+1
+  qd[t] (n), t=1..T+Ty+1
+  q_des_cur[t] (n), t=1..T+1
+  u[t] (m), t=0..T  # input.
+  #tau_cont_sum[t] (n), t=1..T+1
+end
+
+minimize
+  kappa*sum[t=0..T](sum(pos(abs(2*mass*qd[t+1])-tau_max_delta_t))) + alpha*posture_weight*quad(delta_q_des-(q[T+Ty+1]-q[0])) + zeta*xyz_weight*quad(delta_x_des-J*(q[T+Ty+1]-q[0]))+ mu*sum[t=0..T](quad(u[t])) + beta*sum[t=0..T](sum(pos(n_K_J_all*(q[t+1]-q[0]) - delta_f_max))) #+ zeta*sum[t=0..T](sum(pos(n_K_J_all*(q[t+1]-q[t])-delta_rate_f_max))) + zeta*sum[t=0..T](sum(pos(-n_K_J_all*(q[t+1]-q[t])-delta_rate_f_max))) #+ gamma*quad(qd[T+1])    sum[t=0..T+4](sum(pos(q[t] - q_max_nom))) + sum[t=0..T+4](sum(pos(q_min_nom - q[t]))) + #gamma*sum[t=0..T+1](quad(vel_norm_J*qd[t])) # + gamma*quad(qd_eps)  + zeta*quad(impulse_eps)  #zeta*sum[t=0..T+1](quad(vel_norm_J*qd[t]))
+  #using n_K_J_over at every time step instead of just T+1 causes the problem not to converge ####beta*sum[t=0..T](quad(n_K_J_over*(q[t+1]-q[0]) - delta_f_des))
+
+subject to
+  qd[t+1] == A_tl*qd[t] + A_tr*q[t] + B_t1*(q_des_cur[t] + u[t]) + B_t2*(tau_cont_sum[0]) + B_t3*(q[0]), t=0..T
+  q[t+1]  == A_bl*qd[t] + A_br*q[t] + B_b1*(q_des_cur[t] + u[t]) + B_b2*(tau_cont_sum[0]) + B_b3*(q[0]), t=0..T
+
+  qd[t+1] == A_tl*qd[t] + A_tr*q[t] + B_t1*(q_des_cur[T+1]) + B_t2*(tau_cont_sum[0]) + B_t3*(q[0]), t=T+1..T+Ty
+  q[t+1]  == A_bl*qd[t] + A_br*q[t] + B_b1*(q_des_cur[T+1]) + B_b2*(tau_cont_sum[0]) + B_b3*(q[0]), t=T+1..T+Ty
+
+
+  q_des_cur[t+1] == q_des_cur[t] + u[t], t=0..T
+  #abs(qd[t+1]) <= qd_max+qd_eps, t=0..T
+  q_min <= q[t+1] <= q_max, t=0..T+Ty
+  torque_min <= Kp*(q_des_cur[t]+u[t]-q[t])-Kd*qd[t] <= torque_max, t=0..T
+
+  # can use to smooth change in controller input
+  #abs(u[t]) <= u_max, t=0..T  #box limit on changes in q_des_cur
+
+  # could come back and solve scaling issues to leave terms in cost function as constraints instead
+  #n_K_J_all*(q[t+1]-q[0]) <= delta_f_max, t=0..T #+ f_eps, t=0..T
+  #n_K_J_all*(q[t+1]-q[0]) <= delta_f_max + f_eps[t+1], t=0..T
+
+  #this is an attempt to limit joint velocity w.r.t. a simple impact model
+  #abs(2*mass*qd[t+1]) <= tau_max_delta_t, t=0..T
+end

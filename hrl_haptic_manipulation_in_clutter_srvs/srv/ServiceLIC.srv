@@ -1,0 +1,16 @@
+# goal pose that has been commanded for this local controller. (in
+# the torso coord frame.)
+geometry_msgs/PoseStamped goal_pose
+geometry_msgs/PoseStamped last_start_pose
+hrl_msgs/FloatArrayBare   features
+
+---
+
+# joint 
+hrl_msgs/FloatArrayBare joint_angles
+
+# base
+geometry_msgs/PoseStamped base_pose
+
+# torso height
+std_msgs/Float64 torso_height

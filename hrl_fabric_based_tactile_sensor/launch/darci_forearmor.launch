@@ -1,0 +1,46 @@
+
+<launch>
+    <arg name="forearm_slope" default="30." />
+    <arg name="forearmor_slope" default="30." />
+    <arg name="wrist_slope" default="30." />
+
+    <node name="forearmor_front_taxels_driver" pkg="hrl_fabric_based_tactile_sensor"
+        type="darci_tactile_forearmor_driver_node.py" output='screen'
+        ns='fabric_forearmor_front_sensor'
+        args='--serial_dev=/dev/darci/forearm_front --front'
+        >
+    </node>
+
+    <node name="forearmor_front_taxels_calibration" pkg="hrl_fabric_based_tactile_sensor"
+        type="fabric_skin_calibration_node.py" output='screen'
+        args='--slope=$(arg forearmor_slope) --miv=1.0' ns='fabric_forearmor_front_sensor' >
+    </node>
+
+    <node name="forearmor_back_taxels_driver" pkg="hrl_fabric_based_tactile_sensor"
+        type="darci_tactile_forearmor_driver_node.py" output='screen'
+        ns='fabric_forearmor_back_sensor'
+        args='--serial_dev=/dev/darci/forearm_back --back'
+        >
+    </node>
+
+    <node name="forearmor_back_taxels_calibration" pkg="hrl_fabric_based_tactile_sensor"
+        type="fabric_skin_calibration_node.py" output='screen'
+        args='--slope=$(arg forearmor_slope)  --miv=1.0' ns='fabric_forearmor_back_sensor' >
+    </node>
+
+    <node name="forearmor_edge_taxels_driver" pkg="hrl_fabric_based_tactile_sensor"
+        type="darci_tactile_forearmor_driver_node.py" output='screen'
+        ns='fabric_forearmor_edge_sensor'
+        args='--serial_dev=/dev/darci/forearm_edge --edge'
+        >
+    </node>
+
+    <node name="forearmor_edge_taxels_calibration" pkg="hrl_fabric_based_tactile_sensor"
+        type="fabric_skin_calibration_node.py" output='screen'
+        args='--slope=$(arg forearmor_slope)  --miv=1.0' ns='fabric_forearmor_edge_sensor' >
+    </node>
+
+    <include file='$(find hrl_fabric_based_tactile_sensor)/launch/darci_forearmor_viz.launch' />
+
+</launch>
+

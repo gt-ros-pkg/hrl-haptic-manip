@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<package>
+<name>hrl_haptic_manipulation_dev</name>
+<version>0.0.0</version>
+<description>
+    Manipulation in clutter using haptic sensing.
+    Maintained by Marc Killpack, Tapomayukh Bhattacharjee,
+    Jeffrey Hawke and Daehyung Park (previously Advait Jain),. Advisor:
+    Prof. Charlie Kemp. Healthcare Robotics Lab, Georgia Tech
+</description>
+
+<maintainer email="deric.park@gatech.edu">Daehyung Park</maintainer>
+
+<license>BSD</license>
+<url type="website">http://ros.org/wiki/hrl_haptic_manipulation_in_clutter</url>
+
+
+<buildtool_depend>catkin</buildtool_depend>
+<!--run_depend></run_depend-->
+
+<!-- The export tag contains other, unspecified, tags -->
+<export>
+  <!-- You can specify that this package is a metapackage here: -->
+  <metapackage/>
+  
+  <!-- Other tools can request additional information be placed here -->
+</export>
+</package>
